@@ -1,0 +1,2999 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>AI Disaster Prediction System</title>
+    <link href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.0.0/css/all.min.css" rel="stylesheet">
+    <link href="https://fonts.googleapis.com/css2?family=Inter:wght@300;400;600;700;800&display=swap" rel="stylesheet">
+    <script src="https://cdn.jsdelivr.net/npm/chart.js"></script>
+    <style>
+        :root {
+            --flood-primary:   #3b82f6;
+            --flood-secondary: #0ea5e9;
+            --eq-primary:      #e74c3c;
+            --eq-secondary:    #c0392b;
+            --success:         #10b981;
+            --warning:         #f59e0b;
+            --danger:          #ef4444;
+            --bg-dark:         #0f1419;
+            --bg-mid:          #1a252f;
+            --glass:           rgba(255,255,255,0.08);
+            --glass-border:    rgba(255, 255, 255, 0.192);
+            --wildfire-primary: #ff6b2f;
+            --wildfire-accent:  #ff9a66;
+            --storm-primary:    #06b6d4;
+            --storm-accent:     #0ea5e9;
+            --bg-light:        #f9fafb;
+            --text-main:       #111827;
+            --text-muted:      #6b7280;
+            --card-bg:         #ffffff;
+            --card-border:     #e5e7eb;
+        }
+        
+        @keyframes bgShift {
+            0% { background-position: 0% 50%; }
+            50% { background-position: 100% 50%; }
+            100% { background-position: 0% 50%; }
+        }
+        html { scroll-behavior: smooth; }
+
+        body {
+            font-family: 'Inter', system-ui, -apple-system, 'Segoe UI', Roboto, 'Helvetica Neue', Arial;
+            background: var(--bg-light);
+            color: var(--text-main);
+        }
+
+        .container { max-width: 1400px; margin: 0 auto; padding: 0 20px; }
+
+        
+        .header {
+            background: #ffffff;
+            padding: 0.8rem 0;
+            position: fixed;
+            width: 100%;
+            top: 0;
+            z-index: 1000;
+            border-bottom: 1px solid var(--card-border);
+        }
+
+        .navbar {
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+            max-width: 1400px;
+            margin: 0 auto;
+            padding: 0 20px;
+        }
+
+        .nav-brand {
+            display: flex;
+            align-items: center;
+            gap: 12px;
+        }
+
+        .nav-brand .brand-icons { display: flex; gap: 6px; }
+
+        .nav-brand .brand-icons i:first-child { color: var(--flood-primary); font-size: 1.8rem; animation: waveAnim 2.5s ease-in-out infinite; }
+        .nav-brand .brand-icons i:last-child  { color: var(--eq-primary);    font-size: 1.8rem; animation: pulseAnim 2s ease-in-out infinite; }
+
+        .nav-brand h1 {
+            font-size: 1.4rem;
+            font-weight: 800;
+            color: var(--text-main);
+        }
+
+        @keyframes waveAnim  { 0%,100%{transform:rotate(0)}  25%{transform:rotate(-12deg)} 75%{transform:rotate(12deg)} }
+        @keyframes pulseAnim { 0%,100%{transform:scale(1)}   50%{transform:scale(1.15)} }
+
+        .nav-menu { display: flex; list-style: none; gap: 6px; }
+
+        .nav-link {
+            color: var(--text-muted);
+            text-decoration: none;
+            padding: 9px 16px;
+            border-radius: 25px;
+            transition: all 0.3s;
+            font-weight: 500;
+            font-size: 0.95rem;
+        }
+
+        .nav-link:hover, .nav-link.active {
+            background: #eff6ff;
+            color: #2563eb;
+            transform: translateY(-2px);
+        }
+
+        .hamburger { display: none; cursor: pointer; }
+        .hamburger .bar { display: block; width: 25px; height: 3px; margin: 5px; background: #fff; border-radius: 3px; transition: all 0.3s; }
+
+        .main-content { margin-top: 80px; padding: 2rem 0; }
+
+        .tab-switcher {
+            display: flex;
+            justify-content: center;
+            gap: 16px;
+            margin: 2rem 0 3rem;
+        }
+
+        .tab-btn {
+            display: flex;
+            align-items: center;
+            gap: 10px;
+            padding: 14px 28px;
+            border: none;
+            border-radius: 999px;
+            cursor: pointer;
+            font-size: 1.1rem;
+            font-weight: 700;
+            transition: all 0.4s ease;
+            text-transform: uppercase;
+            letter-spacing: 1px;
+            position: relative;
+            overflow: hidden;
+            box-shadow: inset 0 -8px 24px rgba(0,0,0,0.25);
+        }
+        .tab-btn i { opacity: 0.95; margin-right: 8px; }
+
+        .tab-btn::before {
+            content: '';
+            position: absolute;
+            top: 0; left: -100%;
+            width: 100%; height: 100%;
+            background: linear-gradient(90deg, transparent, rgba(255,255,255,0.2), transparent);
+            transition: left 0.5s;
+        }
+        .tab-btn:hover::before { left: 100%; }
+
+        .tab-btn.flood-tab {
+            background: linear-gradient(135deg, rgba(59,130,246,0.2), rgba(14,165,233,0.2));
+            border: 2px solid var(--flood-primary);
+            color: var(--flood-primary);
+        }
+
+        .tab-btn.flood-tab.active, .tab-btn.flood-tab:hover {
+            background: linear-gradient(135deg, var(--flood-primary), var(--flood-secondary));
+            color: #fff;
+            box-shadow: 0 8px 25px rgba(59,130,246,0.45);
+            transform: translateY(-3px);
+        }
+
+        .tab-btn.eq-tab {
+            background: linear-gradient(135deg, rgba(231,76,60,0.2), rgba(192,57,43,0.2));
+            border: 2px solid var(--eq-primary);
+            color: var(--eq-primary);
+        }
+
+        .tab-btn.eq-tab.active, .tab-btn.eq-tab:hover {
+            background: linear-gradient(135deg, var(--eq-primary), var(--eq-secondary));
+            color: #fff;
+            box-shadow: 0 8px 25px rgba(231,76,60,0.45);
+            transform: translateY(-3px);
+        }
+
+        .tab-panel { display: none; }
+        .tab-panel.active { display: block; }
+
+        .hero {
+            text-align: center;
+            padding: 4rem 2rem;
+            border-radius: 25px;
+            margin-bottom: 3rem;
+            position: relative;
+            overflow: hidden;
+        }
+
+        .hero.flood-hero {
+            background: #f0f8ff;
+            border: 1px solid #e0f2fe;
+        }
+
+        .hero.eq-hero {
+            background: #fff1f2;
+            border: 1px solid #ffe4e6;
+        }
+
+        .hero.wildfire-hero {
+            background: #fff7ed;
+            border: 1px solid #ffedd5;
+        }
+
+        .hero.storm-hero {
+            background: #ecfeff;
+            border: 1px solid #cffafe;
+        }
+
+        .hero h1 {
+            font-size: 3.5rem;
+            font-weight: 900;
+            margin-bottom: 1.2rem;
+        }
+
+        .flood-hero h1 { color: #2563eb; }
+        .eq-hero    h1 { color: #dc2626; }
+        .wildfire-hero h1 { color: #ea580c; }
+        .storm-hero    h1 { color: #0891b2; }
+
+        .hero p {
+            font-size: 1.2rem;
+            color: var(--text-muted);
+            max-width: 760px;
+            margin: 0 auto 2rem;
+        }
+
+        .hero-stats {
+            display: flex;
+            justify-content: center;
+            gap: 3rem;
+            flex-wrap: wrap;
+            margin-top: 2rem;
+        }
+
+        .hero-stat { text-align: center; }
+        .hero-stat .stat-number { font-size: 2.2rem; font-weight: 800; display: block; }
+        .flood-hero .stat-number { color: #2563eb; }
+        .eq-hero    .stat-number { color: #dc2626; }
+        .wildfire-hero .stat-number { color: #ea580c; }
+        .storm-hero    .stat-number { color: #0891b2; }
+        .hero-stat .stat-label  { font-size: 0.85rem; color: #9ca3af; text-transform: uppercase; letter-spacing: 1px; }
+
+        .water-flow {
+            height: 100px;
+            border-radius: 12px;
+            margin: 1.5rem 0;
+            overflow: hidden;
+            border: 1px solid #bfdbfe;
+            position: relative;
+            background: #93c5fd;
+        }
+
+        .water-wave {
+            position: absolute; top: 0; left: 0;
+            width: 200%; height: 100%;
+            background: repeating-linear-gradient(90deg,
+                transparent, transparent 10px,
+                #60a5fa 10px, #60a5fa 20px,
+                transparent 20px, transparent 30px,
+                #3b82f6 30px, #3b82f6 40px
+            );
+            animation: waterFlow 5s linear infinite;
+        }
+        @keyframes waterFlow { 0%{transform:translateX(-50%)} 100%{transform:translateX(0)} }
+        .seismic-visualization {
+            height: 130px;
+            border-radius: 14px;
+            margin: 1.5rem 0;
+            overflow: hidden;
+            border: 1px solid rgba(231,76,60,0.4);
+            position: relative;
+            background: linear-gradient(180deg, rgba(20,5,5,0.95) 0%, rgba(40,10,10,0.9) 100%);
+            box-shadow: inset 0 0 40px rgba(231,76,60,0.08), 0 0 20px rgba(231,76,60,0.1);
+        }
+
+        .seismic-visualization::before {
+            content: '';
+            position: absolute; inset: 0;
+            background:
+                repeating-linear-gradient(0deg,   transparent, transparent 24px, rgba(231,76,60,0.07) 25px),
+                repeating-linear-gradient(90deg,  transparent, transparent 39px, rgba(231,76,60,0.05) 40px);
+            pointer-events: none; z-index: 1;
+        }
+
+
+        .seismic-visualization::after {
+            content: '';
+            position: absolute; left: 0; right: 0; top: 50%; height: 1px;
+            background: rgba(231,76,60,0.22);
+            z-index: 2;
+        }
+
+        .seismo-svg-wrap {
+            position: absolute; inset: 0;
+            display: flex; align-items: center;
+            z-index: 3;
+        }
+
+        #seismo-path {
+            fill: none;
+            stroke: url(#seismoGrad);
+            stroke-width: 2.5;
+            stroke-linecap: round;
+            stroke-linejoin: round;
+            filter: drop-shadow(0 0 4px rgba(231,76,60,0.9));
+        }
+
+        .seismo-cursor {
+            position: absolute; top: 0; bottom: 0;
+            width: 2px;
+            background: linear-gradient(180deg, transparent, rgba(255,100,80,0.9), transparent);
+            z-index: 5;
+            box-shadow: 0 0 8px rgba(255,100,80,0.8);
+        }
+
+        .seismo-label {
+            position: absolute; font-size: 0.68rem; letter-spacing: 1px;
+            text-transform: uppercase; opacity: 0.5; z-index: 6;
+        }
+        .seismo-label.tl { top: 6px; left: 10px; color: #e74c3c; }
+        .seismo-label.tr { top: 6px; right: 10px; color: #f97316; }
+        .seismo-label.bl { bottom: 6px; left: 10px; color: rgba(255,255,255,0.35); }
+        .seismo-mag-badge {
+            position: absolute; top: 8px; left: 50%; transform: translateX(-50%);
+            background: rgba(231,76,60,0.18); border: 1px solid rgba(231,76,60,0.4);
+            border-radius: 20px; padding: 2px 12px;
+            font-size: 0.78rem; font-weight: 700; color: #f97316;
+            z-index: 6; letter-spacing: 0.5px;
+        }
+
+        .status-dashboard {
+            display: grid;
+            grid-template-columns: repeat(auto-fit, minmax(260px,1fr));
+            gap: 1.5rem;
+            margin-bottom: 3rem;
+        }
+
+        .status-card {
+            background: #ffffff;
+            padding: 2rem;
+            border-radius: 12px;
+            border: 1px solid var(--card-border);
+            text-align: center;
+            transition: all 0.4s;
+            position: relative;
+            overflow: hidden;
+            box-shadow: 0 4px 6px -1px rgba(0,0,0,0.05);
+        }
+
+        .status-card:hover { transform: translateY(-7px); box-shadow: 0 10px 25px rgba(0,0,0,0.1); }
+
+        .status-card i { font-size: 3rem; margin-bottom: 1rem; display: block; }
+        .status-card.safe i    { color: var(--success); }
+        .status-card.warning i { color: var(--warning); }
+        .status-card.danger i  { color: var(--danger); }
+        .status-card.info i    { color: var(--flood-primary); }
+
+        .status-value { font-size: 2.5rem; font-weight: 800; margin: 0.8rem 0; color: var(--text-main); }
+        .status-label { font-size: 0.95rem; color: #9ca3af; text-transform: uppercase; letter-spacing: 1px; font-weight: 600; }
+
+        .prediction-panel {
+            display: grid;
+            grid-template-columns: 1fr 1fr;
+            gap: 2.5rem;
+            margin-bottom: 3rem;
+        }
+
+        .input-section, .results-section {
+            background: #ffffff;
+            padding: 2.5rem;
+            border-radius: 20px;
+            border: 1px solid var(--card-border);
+            box-shadow: 0 4px 6px -1px rgba(0,0,0,0.05);
+        }
+
+        .section-title {
+            font-size: 1.5rem;
+            margin-bottom: 1.8rem;
+            display: flex;
+            align-items: center;
+            gap: 12px;
+        }
+
+        .flood-panel .section-title { color: var(--flood-primary); }
+        .eq-panel    .section-title { color: var(--eq-primary); }
+        .wildfire-panel .section-title { color: var(--wildfire-primary); }
+        .storm-panel    .section-title { color: var(--storm-primary); }
+
+        .form-group { margin-bottom: 1.2rem; }
+        .form-group label { display: block; margin-bottom: 0.6rem; color: #374151; font-weight: 600; font-size: 0.95rem; letter-spacing: 0.3px; }
+
+        .input-wrapper {
+            position: relative;
+            display: flex;
+            flex-direction: column;
+            margin-bottom: 0;
+        }
+
+        .input-hint {
+            font-size: 0.8rem;
+            color: #9ca3af;
+            margin-top: 0.5rem;
+            font-style: italic;
+            padding-left: 2px;
+        }
+
+        .form-group input, .form-group select {
+            width: 100%;
+            padding: 13px;
+            border: 1px solid #d1d5db;
+            border-radius: 10px;
+            background: #ffffff;
+            color: #111827;
+            font-size: 0.97rem;
+            transition: all 0.3s;
+        }
+
+        .form-group input:focus, .form-group select:focus {
+            outline: none;
+            transform: translateY(-1px);
+        }
+
+        .flood-panel input:focus, .flood-panel select:focus {
+            border-color: var(--flood-primary);
+            box-shadow: 0 0 18px rgba(59,130,246,0.3);
+        }
+
+        .eq-panel input:focus, .eq-panel select:focus {
+            border-color: var(--eq-primary);
+            box-shadow: 0 0 18px rgba(231,76,60,0.3);
+        }
+
+        .wildfire-panel input:focus, .wildfire-panel select:focus {
+            border-color: var(--wildfire-primary);
+            box-shadow: 0 0 18px rgba(255,107,47,0.35);
+        }
+
+        .storm-panel input:focus, .storm-panel select:focus {
+            border-color: var(--storm-primary);
+            box-shadow: 0 0 18px rgba(6,182,212,0.35);
+        }
+
+        .form-group select option { background: #ffffff; color: #111827; }
+
+        .btn {
+            color: white;
+            border: none;
+            padding: 16px 36px;
+            border-radius: 30px;
+            cursor: pointer;
+            font-size: 1rem;
+            font-weight: 700;
+            transition: all 0.4s;
+            width: 100%;
+            margin-top: 1rem;
+            text-transform: uppercase;
+            letter-spacing: 1px;
+            position: relative;
+            overflow: hidden;
+        }
+
+        .btn::before {
+            content: '';
+            position: absolute; top: 0; left: -100%;
+            width: 100%; height: 100%;
+            background: linear-gradient(90deg, transparent, rgba(255,255,255,0.2), transparent);
+            transition: left 0.5s;
+        }
+        .btn:hover::before { left: 100%; }
+
+        .btn-flood { background: linear-gradient(45deg, var(--flood-primary), var(--flood-secondary)); }
+        .btn-flood:hover { box-shadow: 0 10px 28px rgba(59,130,246,0.5); transform: translateY(-3px); }
+
+        .btn-eq { background: linear-gradient(45deg, var(--eq-primary), #f97316); }
+        .btn-eq:hover { box-shadow: 0 10px 28px rgba(231,76,60,0.5); transform: translateY(-3px); }
+
+        .btn-wildfire { background: linear-gradient(45deg, var(--wildfire-primary), var(--wildfire-accent)); }
+        .btn-wildfire:hover { box-shadow: 0 10px 28px rgba(255,107,47,0.5); transform: translateY(-3px); }
+
+        .btn-storm { background: linear-gradient(45deg, var(--storm-primary), var(--storm-accent)); }
+        .btn-storm:hover { box-shadow: 0 10px 28px rgba(6,182,212,0.5); transform: translateY(-3px); }
+
+        .wildfire-map { background: linear-gradient(135deg, rgba(80,20,5,0.85), rgba(200,70,20,0.55)); border: 2px solid rgba(255,107,47,0.3) !important; }
+        .storm-map    { background: linear-gradient(135deg, rgba(5,25,50,0.85), rgba(6,182,212,0.35)); border: 2px solid rgba(6,182,212,0.3) !important; }
+
+        
+        .tab-btn#tab-wildfire { background: linear-gradient(135deg, rgba(255,107,47,0.2), rgba(255,154,102,0.2)); border: 2px solid var(--wildfire-primary); color: var(--wildfire-primary); }
+        .tab-btn#tab-wildfire.active, .tab-btn#tab-wildfire:hover { background: linear-gradient(135deg, var(--wildfire-primary), var(--wildfire-accent)); color: #fff; box-shadow: 0 8px 25px rgba(255,107,47,0.45); transform: translateY(-3px); }
+        .tab-btn#tab-storm { background: linear-gradient(135deg, rgba(6,182,212,0.2), rgba(14,165,233,0.2)); border: 2px solid var(--storm-primary); color: var(--storm-primary); }
+        .tab-btn#tab-storm.active, .tab-btn#tab-storm:hover { background: linear-gradient(135deg, var(--storm-primary), var(--storm-accent)); color: #fff; box-shadow: 0 8px 25px rgba(6,182,212,0.45); transform: translateY(-3px); }
+
+        .risk-gauge {
+            position: relative;
+            width: 220px;
+            height: 220px;
+            margin: 2rem auto;
+        }
+
+        .gauge-svg {
+            width: 100%; height: 100%;
+            transform: rotate(-90deg);
+            filter: drop-shadow(0 4px 15px rgba(0,0,0,0.4));
+        }
+
+        .gauge-bg { fill: none; stroke: #e5e7eb; stroke-width: 22; }
+
+        .gauge-progress {
+            fill: none;
+            stroke-width: 22;
+            stroke-linecap: round;
+            transition: stroke-dashoffset 1.2s cubic-bezier(.22,.9,.23,1), stroke 0.9s ease;
+            filter: drop-shadow(0 0 8px currentColor);
+        }
+
+        .gauge-text {
+            position: absolute;
+            top: 50%; left: 50%;
+            transform: translate(-50%,-50%);
+            text-align: center;
+        }
+
+        .gauge-value { font-size: 2.6rem; font-weight: 800; color: var(--text-main); }
+        .gauge-label { font-size: 0.85rem; color: #9ca3af; text-transform: uppercase; letter-spacing: 2px; margin-top: 4px; }
+
+        .prediction-results { margin-top: 1.5rem; }
+        .result-item {
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+            padding: 0.9rem 0;
+            border-bottom: 1px solid #e5e7eb;
+            font-size: 1rem;
+            color: var(--text-main);
+        }
+
+        .flood-panel .result-item strong { color: var(--flood-primary); }
+        .eq-panel    .result-item strong { color: var(--eq-primary); }
+        .result-item span { font-weight: 700; }
+
+        .charts-section {
+            display: grid;
+            grid-template-columns: 1fr 1fr;
+            gap: 2rem;
+            margin-bottom: 3rem;
+        }
+
+        .chart-card {
+            background: #ffffff;
+            padding: 2rem;
+            border-radius: 20px;
+            border: 1px solid var(--card-border);
+            box-shadow: 0 4px 6px -1px rgba(0,0,0,0.05);
+        }
+
+        .chart-container { position: relative; height: 320px; margin-top: 1rem; }
+
+        .alert-system {
+            background: #ffffff;
+            padding: 2.5rem;
+            border-radius: 20px;
+            border: 1px solid var(--card-border);
+            margin-bottom: 3rem;
+            box-shadow: 0 4px 6px -1px rgba(0,0,0,0.05);
+        }
+
+        .alert-item {
+            display: flex;
+            align-items: center;
+            gap: 18px;
+            padding: 1.3rem;
+            margin: 1.2rem 0;
+            border-radius: 12px;
+            border-left: 5px solid;
+            transition: all 0.3s;
+        }
+
+        .alert-item:hover { transform: translateX(8px); box-shadow: 0 5px 18px rgba(0,0,0,0.25); }
+
+        .alert-item.low    { background: rgba(16,185,129,0.12);  border-color: var(--success); }
+        .alert-item.medium { background: rgba(245,158,11,0.12);  border-color: var(--warning); }
+        .alert-item.high   { background: rgba(239,68,68,0.12);   border-color: var(--danger); }
+
+        .alert-item i { font-size: 1.8rem; min-width: 36px; }
+        .alert-item.low    i { color: var(--success); }
+        .alert-item.medium i { color: var(--warning); }
+        .alert-item.high   i { color: var(--danger); }
+
+        
+        .regional-map {
+            background: #ffffff;
+            padding: 2.5rem;
+            border-radius: 20px;
+            border: 1px solid var(--card-border);
+            margin-bottom: 3rem;
+            box-shadow: 0 4px 6px -1px rgba(0,0,0,0.05);
+        }
+
+        .map-container {
+            height: 400px;
+            border-radius: 14px;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            position: relative;
+            overflow: hidden;
+            border: 2px solid rgba(255,255,255,0.1);
+        }
+
+        .flood-map  { background: linear-gradient(135deg, rgba(30,60,114,0.8), rgba(59,130,246,0.5)); }
+
+        .eq-map {
+            background: radial-gradient(ellipse at 50% 60%, #0d1f0d 0%, #050d14 60%, #030710 100%);
+            border: 2px solid rgba(231,76,60,0.25) !important;
+            position: relative;
+            overflow: hidden;
+            min-height: 460px;
+            flex-direction: column;
+            align-items: stretch !important;
+            justify-content: flex-start !important;
+            padding: 0;
+        }
+
+
+        .eq-map::before {
+            content: '';
+            position: absolute; inset: 0;
+            background-image:
+                radial-gradient(1px 1px at 10% 15%, rgba(255,255,255,0.3) 0%, transparent 100%),
+                radial-gradient(1px 1px at 30% 40%, rgba(255,255,255,0.2) 0%, transparent 100%),
+                radial-gradient(1px 1px at 60% 20%, rgba(255,255,255,0.25) 0%, transparent 100%),
+                radial-gradient(1px 1px at 80% 70%, rgba(255,255,255,0.2) 0%, transparent 100%),
+                radial-gradient(1px 1px at 45% 80%, rgba(255,255,255,0.15) 0%, transparent 100%);
+            pointer-events: none; z-index: 0;
+        }
+
+        .eq-map-inner {
+            position: relative; width: 100%; height: 100%;
+            flex: 1; display: flex; flex-direction: column;
+        }
+
+        #world-map-svg {
+            width: 100%; height: 100%;
+            position: absolute; inset: 0;
+            opacity: 0.22;
+        }
+
+        #tectonic-svg {
+            width: 100%; height: 100%;
+            position: absolute; inset: 0;
+            opacity: 0.35;
+            pointer-events: none;
+        }
+
+        .seismic-map-topbar {
+            position: relative; z-index: 10;
+            display: flex; align-items: center; justify-content: space-between;
+            padding: 10px 18px;
+            background: rgba(0,0,0,0.55);
+            border-bottom: 1px solid rgba(231,76,60,0.2);
+            flex-shrink: 0;
+        }
+
+        .seismic-map-topbar .map-title {
+            font-size: 0.82rem; font-weight: 700; letter-spacing: 1.5px;
+            text-transform: uppercase; color: #f97316;
+            display: flex; align-items: center; gap: 8px;
+        }
+
+        .live-dot {
+            width: 8px; height: 8px; border-radius: 50%;
+            background: #ef4444;
+            box-shadow: 0 0 8px #ef4444;
+            animation: liveBlink 1.2s ease-in-out infinite;
+        }
+        @keyframes liveBlink { 0%,100%{opacity:1} 50%{opacity:0.2} }
+
+        .seismic-map-stats {
+            display: flex; gap: 18px;
+        }
+
+        .map-stat-pill {
+            background: rgba(231,76,60,0.12);
+            border: 1px solid rgba(231,76,60,0.3);
+            border-radius: 20px; padding: 3px 12px;
+            font-size: 0.72rem; color: #fca5a5; font-weight: 600;
+            display: flex; align-items: center; gap: 5px;
+        }
+
+        .map-stat-pill i { font-size: 0.65rem; }
+
+        .seismic-map-body {
+            position: relative; flex: 1;
+            min-height: 340px;
+            overflow: hidden;
+        }
+
+        .mag-legend {
+            position: absolute; bottom: 12px; left: 14px; z-index: 20;
+            background: rgba(0,0,0,0.7);
+            border: 1px solid rgba(255,255,255,0.1);
+            border-radius: 10px; padding: 8px 12px;
+            font-size: 0.68rem;
+        }
+
+        .mag-legend-title {
+            color: rgba(255,255,255,0.55); letter-spacing: 1px;
+            text-transform: uppercase; margin-bottom: 6px; font-weight: 700;
+        }
+
+        .mag-legend-items { display: flex; flex-direction: column; gap: 4px; }
+
+        .mag-legend-row {
+            display: flex; align-items: center; gap: 8px;
+        }
+
+        .mag-dot {
+            border-radius: 50%; flex-shrink: 0;
+        }
+
+        
+        .richter-bar-wrap {
+            position: absolute; bottom: 12px; right: 14px; z-index: 20;
+            background: rgba(0,0,0,0.7);
+            border: 1px solid rgba(255,255,255,0.1);
+            border-radius: 10px; padding: 10px 14px;
+            min-width: 160px;
+        }
+
+        .richter-title {
+            font-size: 0.68rem; color: rgba(255,255,255,0.55);
+            text-transform: uppercase; letter-spacing: 1px;
+            font-weight: 700; margin-bottom: 7px;
+        }
+
+        .richter-scale {
+            display: flex; gap: 2px; align-items: flex-end; height: 28px;
+        }
+
+        .richter-seg {
+            flex: 1; border-radius: 2px 2px 0 0;
+            transition: height 0.5s ease;
+        }
+
+        .richter-labels {
+            display: flex; justify-content: space-between;
+            font-size: 0.58rem; color: rgba(255,255,255,0.4);
+            margin-top: 3px;
+        }
+
+        
+        .seismic-ticker {
+            position: absolute; bottom: 0; left: 0; right: 0; z-index: 20;
+            background: rgba(0,0,0,0.8);
+            border-top: 1px solid rgba(231,76,60,0.25);
+            padding: 5px 14px;
+            font-size: 0.7rem; color: rgba(255,200,150,0.85);
+            overflow: hidden; white-space: nowrap;
+        }
+
+        .ticker-inner {
+            display: inline-block;
+            animation: tickerScroll 30s linear infinite;
+        }
+        @keyframes tickerScroll { 0%{transform:translateX(100%)} 100%{transform:translateX(-100%)} }
+
+        .map-point {
+            position: absolute;
+            border-radius: 50%;
+            cursor: pointer;
+            z-index: 15;
+        }
+
+        .map-point.low {
+            width: 14px; height: 14px;
+            background: radial-gradient(circle, #10b981, #34d399);
+            box-shadow: 0 0 12px #10b981;
+        }
+        .map-point.medium {
+            width: 20px; height: 20px;
+            background: radial-gradient(circle, #f59e0b, #fbbf24);
+            box-shadow: 0 0 18px #f59e0b;
+        }
+        .map-point.high {
+            width: 28px; height: 28px;
+            background: radial-gradient(circle, #ef4444, #f87171);
+            box-shadow: 0 0 22px #ef4444;
+        }
+        .map-point.critical {
+            width: 34px; height: 34px;
+            background: radial-gradient(circle, #dc2626, #7f1d1d);
+            box-shadow: 0 0 28px #dc2626, 0 0 50px rgba(220,38,38,0.4);
+        }
+
+        
+        .map-point.high::after, .map-point.critical::after {
+            content: '';
+            position: absolute; inset: -8px;
+            border-radius: 50%;
+            border: 2px solid rgba(239,68,68,0.5);
+            animation: ringPulse 2s ease-out infinite;
+        }
+        .map-point.critical::before {
+            content: '';
+            position: absolute; inset: -18px;
+            border-radius: 50%;
+            border: 1px solid rgba(239,68,68,0.25);
+            animation: ringPulse 2s ease-out infinite 0.5s;
+        }
+
+        @keyframes mapPulse {
+            0%,100%{transform:scale(1);opacity:1}
+            50%{transform:scale(1.9);opacity:0.55}
+        }
+
+        @keyframes ringPulse {
+            0%{transform:scale(0.8);opacity:0.9}
+            100%{transform:scale(2.2);opacity:0}
+        }
+
+        
+        .map-point .mp-tooltip {
+            display: none;
+            position: absolute; bottom: calc(100% + 8px); left: 50%; transform: translateX(-50%);
+            background: rgba(10,10,20,0.95);
+            border: 1px solid rgba(231,76,60,0.4);
+            border-radius: 8px; padding: 6px 10px;
+            white-space: nowrap; font-size: 0.72rem; z-index: 50;
+            pointer-events: none;
+        }
+        .map-point:hover .mp-tooltip { display: block; }
+        .mp-tooltip strong { color: #f97316; display: block; }
+        .mp-tooltip span   { color: rgba(255,255,255,0.65); }
+
+        
+        .combined-overview {
+            display: grid;
+            grid-template-columns: 1fr 1fr;
+            gap: 2.5rem;
+            margin-bottom: 3rem;
+        }
+
+        .overview-card {
+            background: var(--glass);
+            padding: 2rem;
+            border-radius: 20px;
+            backdrop-filter: blur(15px);
+            border: 1px solid var(--glass-border);
+            transition: all 0.4s;
+            cursor: pointer;
+        }
+
+        .overview-card:hover { transform: translateY(-6px); box-shadow: 0 18px 40px rgba(0,0,0,0.35); }
+
+        .overview-card.flood-card { border-top: 4px solid var(--flood-primary); }
+        .overview-card.eq-card    { border-top: 4px solid var(--eq-primary); }
+
+        .overview-header {
+            display: flex;
+            align-items: center;
+            gap: 12px;
+            margin-bottom: 1.5rem;
+        }
+
+        .overview-header i { font-size: 2.2rem; }
+        .flood-card .overview-header i { color: var(--flood-primary); }
+        .eq-card    .overview-header i { color: var(--eq-primary); }
+
+        .overview-header h3 { font-size: 1.3rem; font-weight: 700; }
+        .overview-risk-bar { height: 12px; background: rgba(255,255,255,0.1); border-radius: 6px; overflow: hidden; margin: 0.5rem 0; }
+        .overview-risk-fill { height: 100%; border-radius: 6px; transition: width 1.5s ease; }
+        .flood-card .overview-risk-fill { background: linear-gradient(90deg, var(--flood-primary), var(--flood-secondary)); }
+        .eq-card    .overview-risk-fill  { background: linear-gradient(90deg, var(--eq-primary), #f97316); }
+
+        .overview-stats { display: flex; justify-content: space-between; margin-top: 1.2rem; }
+        .overview-stat-item { text-align: center; }
+        .overview-stat-item .osi-value { font-size: 1.6rem; font-weight: 800; }
+        .overview-stat-item .osi-label { font-size: 0.8rem; opacity: 0.65; }
+        .flood-card .osi-value { color: var(--flood-secondary); }
+        .eq-card    .osi-value { color: #f97316; }
+
+        .switch-btn {
+            display: inline-flex;
+            align-items: center;
+            gap: 8px;
+            margin-top: 1.2rem;
+            padding: 10px 20px;
+            border-radius: 20px;
+            border: none;
+            cursor: pointer;
+            font-weight: 700;
+            font-size: 0.9rem;
+            transition: all 0.3s;
+        }
+
+        .flood-card .switch-btn { background: rgba(59,130,246,0.2); color: var(--flood-primary); }
+        .flood-card .switch-btn:hover { background: var(--flood-primary); color: #fff; }
+        .eq-card    .switch-btn { background: rgba(231,76,60,0.2);  color: var(--eq-primary); }
+        .eq-card    .switch-btn:hover { background: var(--eq-primary); color: #fff; }
+
+        
+        .footer {
+            background: rgba(10,15,22,0.97);
+            padding: 2.5rem 0;
+            margin-top: 4rem;
+            text-align: center;
+            border-top: 1px solid rgba(255,255,255,0.08);
+        }
+
+        .footer-brand {
+            display: flex;
+            justify-content: center;
+            align-items: center;
+            gap: 10px;
+            margin-bottom: 1rem;
+        }
+
+        .footer-brand i:first-child { color: var(--flood-primary); font-size: 1.5rem; }
+        .footer-brand i:last-child  { color: var(--eq-primary);    font-size: 1.5rem; }
+        .footer-brand span { font-size: 1.2rem; font-weight: 700; }
+
+        .footer-links { margin-top: 1rem; }
+        .footer-links a { color: #64748b; text-decoration: none; margin: 0 12px; transition: color 0.3s; font-size: 0.9rem; }
+        .footer-links a:hover { color: var(--flood-primary); }
+        .footer p { opacity: 0.5; font-size: 0.9rem; margin-top: 1rem; }
+
+        
+        .loading {
+            display: inline-block;
+            width: 22px; height: 22px;
+            border: 3px solid rgba(255,255,255,0.2);
+            border-radius: 50%;
+            border-top-color: var(--flood-primary);
+            animation: spin 0.9s linear infinite;
+        }
+        @keyframes spin { to{transform:rotate(360deg)} }
+
+        
+        @media (max-width: 900px) {
+            .prediction-panel, .charts-section, .combined-overview { grid-template-columns: 1fr; }
+            .hero h1 { font-size: 2.4rem; }
+            .hero-stats { gap: 1.5rem; }
+            .nav-menu { display: none; }
+            .hamburger { display: block; }
+        }
+
+        /* ── Auth Navbar & Modal Styles ── */
+        .nav-actions {
+            display: flex;
+            align-items: center;
+            gap: 12px;
+        }
+
+        .auth-nav-btn {
+            background: linear-gradient(135deg, var(--flood-primary), #2563eb);
+            color: #ffffff !important;
+            border: none;
+            padding: 8px 18px;
+            border-radius: 20px;
+            font-size: 0.9rem;
+            font-weight: 600;
+            cursor: pointer;
+            display: inline-flex;
+            align-items: center;
+            gap: 8px;
+            transition: all 0.25s ease;
+            box-shadow: 0 4px 12px rgba(59, 130, 246, 0.25);
+            text-decoration: none;
+        }
+
+        .auth-nav-btn:hover {
+            transform: translateY(-1px);
+            box-shadow: 0 6px 16px rgba(59, 130, 246, 0.35);
+        }
+
+        .user-profile-widget {
+            position: relative;
+            display: inline-block;
+        }
+
+        .user-pill {
+            background: #ffffff;
+            border: 1px solid var(--card-border);
+            padding: 6px 14px;
+            border-radius: 20px;
+            font-size: 0.9rem;
+            font-weight: 600;
+            color: var(--text-main);
+            display: inline-flex;
+            align-items: center;
+            gap: 8px;
+            cursor: pointer;
+            transition: all 0.2s;
+            box-shadow: 0 2px 6px rgba(0,0,0,0.05);
+        }
+
+        .user-pill:hover {
+            border-color: var(--flood-primary);
+        }
+
+        .user-avatar-badge {
+            width: 26px;
+            height: 26px;
+            border-radius: 50%;
+            background: linear-gradient(135deg, var(--flood-primary), var(--eq-primary));
+            color: #fff;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            font-size: 0.8rem;
+            font-weight: 700;
+        }
+
+        .user-dropdown {
+            display: none;
+            position: absolute;
+            right: 0;
+            top: calc(100% + 8px);
+            background: #ffffff;
+            border: 1px solid var(--card-border);
+            border-radius: 14px;
+            box-shadow: 0 15px 35px -5px rgba(0, 0, 0, 0.15);
+            width: 220px;
+            padding: 8px 0;
+            z-index: 1001;
+            animation: fadeInDown 0.2s ease;
+        }
+
+        .user-dropdown.show {
+            display: block;
+        }
+
+        .user-dropdown-header {
+            padding: 10px 16px;
+            border-bottom: 1px solid var(--card-border);
+        }
+
+        .user-dropdown-header strong {
+            display: block;
+            font-size: 0.95rem;
+            color: var(--text-main);
+            overflow: hidden;
+            text-overflow: ellipsis;
+            white-space: nowrap;
+        }
+
+        .user-dropdown-header small {
+            color: var(--text-muted);
+            font-size: 0.8rem;
+            display: block;
+            overflow: hidden;
+            text-overflow: ellipsis;
+            white-space: nowrap;
+        }
+
+        .user-dropdown-item {
+            display: flex;
+            align-items: center;
+            gap: 10px;
+            padding: 10px 16px;
+            color: var(--text-main);
+            text-decoration: none;
+            font-size: 0.88rem;
+            font-weight: 500;
+            width: 100%;
+            background: transparent;
+            border: none;
+            cursor: pointer;
+            text-align: left;
+            transition: background 0.15s;
+        }
+
+        .user-dropdown-item:hover {
+            background: #f3f4f6;
+        }
+
+        .user-dropdown-item.danger {
+            color: var(--danger);
+        }
+
+        .user-dropdown-item.danger:hover {
+            background: #fef2f2;
+        }
+
+        /* ── Modal Overlay ── */
+        .auth-modal-overlay {
+            display: none;
+            position: fixed;
+            top: 0;
+            left: 0;
+            width: 100vw;
+            height: 100vh;
+            background: rgba(15, 23, 42, 0.7);
+            backdrop-filter: blur(8px);
+            z-index: 2000;
+            align-items: center;
+            justify-content: center;
+            padding: 20px;
+        }
+
+        .auth-modal-overlay.active {
+            display: flex;
+        }
+
+        .auth-modal-box {
+            background: #111827;
+            color: #f9fafb;
+            width: 100%;
+            max-width: 420px;
+            border-radius: 20px;
+            border: 1px solid rgba(255, 255, 255, 0.15);
+            box-shadow: 0 25px 50px -12px rgba(0, 0, 0, 0.7);
+            padding: 32px 28px;
+            position: relative;
+            animation: modalPop 0.25s cubic-bezier(0.16, 1, 0.3, 1);
+        }
+
+        @keyframes modalPop {
+            from { transform: scale(0.92); opacity: 0; }
+            to { transform: scale(1); opacity: 1; }
+        }
+
+        @keyframes fadeInDown {
+            from { transform: translateY(-8px); opacity: 0; }
+            to { transform: translateY(0); opacity: 1; }
+        }
+
+        .modal-close-btn {
+            position: absolute;
+            top: 18px;
+            right: 18px;
+            background: rgba(255, 255, 255, 0.1);
+            border: none;
+            color: #9ca3af;
+            width: 32px;
+            height: 32px;
+            border-radius: 50%;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            cursor: pointer;
+            transition: all 0.2s;
+        }
+
+        .modal-close-btn:hover {
+            background: rgba(255, 255, 255, 0.2);
+            color: #ffffff;
+        }
+    </style>
+</head>
+<body>
+
+<header class="header">
+    <nav class="navbar">
+        <div class="nav-brand">
+            <div class="brand-icons">
+                <i class="fas fa-water"></i>
+                <i class="fas fa-mountain"></i>
+            </div>
+            <h1>DisasterAI Pro</h1>
+        </div>
+        <ul class="nav-menu">
+            <li><a href="#flood"       class="nav-link active">Flood</a></li>
+            <li><a href="#earthquake"  class="nav-link">Earthquake</a></li>
+            <li><a href="#wildfire"    class="nav-link">Wildfire</a></li>
+            <li><a href="#storm"       class="nav-link">Storm</a></li>
+        </ul>
+        <div class="nav-actions">
+            <!-- Signed Out state -->
+            <button class="auth-nav-btn" id="openAuthModalBtn" onclick="openAuthModal()">
+                <i class="fas fa-user-circle"></i>
+                <span>Sign In</span>
+            </button>
+
+            <!-- Signed In state -->
+            <div class="user-profile-widget" id="userProfileWidget" style="display:none;">
+                <button class="user-pill" id="userPillBtn" onclick="toggleUserDropdown(event)">
+                    <div class="user-avatar-badge" id="navUserInitial">U</div>
+                    <span id="navUsernameText">User</span>
+                    <i class="fas fa-chevron-down" style="font-size:0.7rem;color:var(--text-muted);"></i>
+                </button>
+                <div class="user-dropdown" id="userDropdown">
+                    <div class="user-dropdown-header">
+                        <strong id="dropdownUsername">Username</strong>
+                        <small id="dropdownEmail">email@example.com</small>
+                    </div>
+                    <button class="user-dropdown-item" onclick="viewMyPredictions()">
+                        <i class="fas fa-history"></i> My Predictions
+                    </button>
+                    <hr style="border:0;border-top:1px solid var(--card-border);margin:4px 0;">
+                    <button class="user-dropdown-item danger" onclick="handleSignOut()">
+                        <i class="fas fa-sign-out-alt"></i> Sign Out
+                    </button>
+                </div>
+            </div>
+
+            <div class="hamburger"><span class="bar"></span><span class="bar"></span><span class="bar"></span></div>
+        </div>
+    </nav>
+</header>
+
+
+<div class="main-content">
+<div class="container">
+
+    
+    <section id="overview" style="text-align:center;padding:4rem 2rem 2rem;margin-bottom:2rem;">
+        <h1 style="font-size:3.8rem;font-weight:900;background:linear-gradient(90deg,var(--flood-primary),var(--eq-primary));-webkit-background-clip:text;-webkit-text-fill-color:transparent;background-clip:text;margin-bottom:1rem;">
+            AI Disaster Prediction System
+        </h1>
+        <p style="font-size:1.25rem;opacity:.85;max-width:820px;margin:0 auto 2rem;">
+            Unified machine learning platform for real-time <strong style="color:var(--flood-secondary)">flood</strong>
+            and <strong style="color:var(--eq-primary)">earthquake</strong> prediction — protecting communities through
+            advanced early-warning intelligence.
+        </p>
+        
+        <div style="display:flex;justify-content:center;flex-wrap:wrap;gap:2.5rem;margin-top:1.5rem;">
+
+            <div class="hero-stat">
+                <span class="stat-number" style="color:var(--flood-secondary)">94.7%</span>
+                <span class="stat-label">Flood Accuracy</span>
+            </div>
+            <div class="hero-stat">
+                <span class="stat-number" style="color:var(--eq-primary)">92.6%</span>
+                <span class="stat-label">Earthquake Accuracy</span>
+            </div>
+            <div class="hero-stat">
+                <span class="stat-number" style="color:var(--success)">2,103</span>
+                <span class="stat-label">Monitoring Stations</span>
+            </div>
+        </div>
+    </section>
+
+
+
+    
+    <div class="tab-switcher">
+        <button class="tab-btn flood-tab active" id="tab-flood" onclick="switchTab('flood')">
+            <i class="fas fa-water"></i> Flood Prediction
+        </button>
+        <button class="tab-btn eq-tab" id="tab-eq" onclick="switchTab('earthquake')">
+            <i class="fas fa-mountain"></i> Earthquake Prediction
+        </button>
+        <button class="tab-btn" id="tab-wildfire" onclick="switchTab('wildfire')">
+            <i class="fas fa-fire"></i> Wildfire Risk
+        </button>
+        <button class="tab-btn" id="tab-storm" onclick="switchTab('storm')">
+            <i class="fas fa-wind"></i> Storm / Cyclone
+        </button>
+    </div>
+
+    
+    <div class="tab-panel active flood-panel" id="panel-flood">
+
+        
+        <div class="hero flood-hero">
+            <h1>Flood Prediction System</h1>
+            <p>Cutting-edge hydrological ML analysis for accurate flood prediction and early warning.</p>
+
+            <div class="hero-stats">
+
+                <div class="hero-stat"><span class="stat-number">94.7%</span><span class="stat-label">Model Accuracy</span></div>
+                <div class="hero-stat"><span class="stat-number">856</span><span class="stat-label">River Stations</span></div>
+                <div class="hero-stat"><span class="stat-number">24/7</span><span class="stat-label">Live Monitoring</span></div>
+            </div>
+        </div>
+
+        
+        <div class="status-dashboard">
+            <div class="status-card safe"><i class="fas fa-shield-alt"></i><div class="status-value" id="flood-risk-status">Normal</div><div class="status-label">Flood Risk</div></div>
+            <div class="status-card info"><i class="fas fa-tint"></i><div class="status-value" id="flood-rainfall-status">15mm</div><div class="status-label">Rainfall</div></div>
+            <div class="status-card warning"><i class="fas fa-water"></i><div class="status-value" id="flood-river-status">4.2m</div><div class="status-label">River Level</div></div>
+            <div class="status-card info"><i class="fas fa-bell"></i><div class="status-value" id="flood-alerts-count">2</div><div class="status-label">Active Alerts</div></div>
+        </div>
+
+        
+        <div class="prediction-panel flood-panel">
+            <div class="input-section">
+                <h2 class="section-title"><i class="fas fa-cloud-rain"></i> Hydrological Data Input</h2>
+                <form id="flood-form">
+                    <div style="display:grid;grid-template-columns:1fr;gap:1rem;">
+                        <div class="form-group">
+                            <label>Rainfall (mm)</label>
+                            <input type="number" id="f-rainfall" min="0" max="200" step="0.1" value="25">
+                        </div>
+                        <div class="form-group">
+                            <label>River Level (m)</label>
+                            <input type="number" id="f-river" min="0" max="15" step="0.1" value="5">
+                        </div>
+                        <div class="form-group">
+                            <label>Temperature (°C)</label>
+                            <input type="number" id="f-temp" min="-10" max="45" step="0.1" value="20">
+                        </div>
+                        <div class="form-group">
+                            <label>Humidity (%)</label>
+                            <input type="number" id="f-humidity" min="0" max="100" step="1" value="70">
+                        </div>
+                        <div class="form-group">
+                            <label>Elevation (m)</label>
+                            <input type="number" id="f-elevation" min="0" max="3000" step="1" value="100">
+                        </div>
+                        <div class="form-group">
+                            <label>Slope (degrees)</label>
+                            <input type="number" id="f-slope" min="0" max="45" step="0.1" value="5">
+                        </div>
+                        <div class="form-group">
+                            <label>Soil Permeability (0–1)</label>
+                            <input type="number" id="f-soil" min="0" max="1" step="0.01" value="0.5">
+                        </div>
+                        <div class="form-group">
+                            <label>7-Day Avg Rainfall (mm)</label>
+                            <input type="number" id="f-rain7d" min="0" max="100" step="0.1" value="20">
+                        </div>
+                    </div>
+                    <button type="submit" class="btn btn-flood"><i class="fas fa-chart-line"></i> Analyze Flood Risk</button>
+                </form>
+            </div>
+            <div class="results-section flood-panel">
+                <h2 class="section-title"><i class="fas fa-chart-pie"></i> AI Risk Assessment</h2>
+                <div class="risk-gauge">
+                    <svg class="gauge-svg" viewBox="0 0 200 200">
+                        <circle class="gauge-bg" cx="100" cy="100" r="80" stroke-dasharray="502.4" stroke-dashoffset="0"></circle>
+                        <circle class="gauge-progress" cx="100" cy="100" r="80" stroke="var(--flood-primary)"
+                                stroke-dasharray="502.4" stroke-dashoffset="341" id="flood-gauge-progress"></circle>
+                    </svg>
+                    <div class="gauge-text">
+                        <div class="gauge-value" id="flood-gauge-pct">32%</div>
+                        <div class="gauge-label">Flood Risk</div>
+                    </div>
+                </div>
+                <div class="prediction-results">
+                    <div class="result-item"><strong>Risk Level:</strong><span id="flood-result-level">Moderate Risk</span></div>
+                    <div class="result-item"><strong>Flood Probability:</strong><span id="flood-result-prob">32%</span></div>
+                    <div class="result-item"><strong>Time Window:</strong><span id="flood-result-time">24–48 hours</span></div>
+                    <div class="result-item"><strong>Model Confidence:</strong><span id="flood-result-conf">87%</span></div>
+                    <div class="result-item"><strong>Recommendation:</strong><span id="flood-result-rec">Monitor conditions</span></div>
+                </div>
+            </div>
+        </div>
+
+        
+        <div class="charts-section">
+            <div class="chart-card">
+                <h3 class="section-title flood-panel"><i class="fas fa-chart-area"></i> Rainfall & River Level Trends</h3>
+                <div class="chart-container"><canvas id="flood-water-chart"></canvas></div>
+            </div>
+            <div class="chart-card">
+                <h3 class="section-title flood-panel"><i class="fas fa-radar"></i> Risk Factors Radar</h3>
+                <div class="chart-container"><canvas id="flood-radar-chart"></canvas></div>
+            </div>
+        </div>
+
+        
+        <div id="flood-alerts" class="alert-system">
+            <h2 class="section-title flood-panel"><i class="fas fa-bell"></i> Flood Alert System</h2>
+            <div class="alert-item low"><i class="fas fa-info-circle"></i><div><strong>Normal Conditions</strong><br>River levels are within normal ranges. No immediate flood risk detected.</div></div>
+            <div class="alert-item medium"><i class="fas fa-exclamation-triangle"></i><div><strong>Weather Advisory</strong><br>Heavy rainfall expected upstream. Monitor river levels for potential changes in the next 48 hours.</div></div>
+        </div>
+
+        
+        <div class="regional-map">
+            <h2 class="section-title flood-panel"><i class="fas fa-globe-americas"></i> Global Flood Monitoring Network</h2>
+            <div class="map-container flood-map">
+                <div class="map-point medium" style="top:25%;left:20%"  title="Mississippi"></div>
+                <div class="map-point high"   style="top:35%;left:75%"  title="Yangtze"></div>
+                <div class="map-point low"    style="top:45%;left:45%"  title="Rhine"></div>
+                <div class="map-point medium" style="top:55%;left:85%"  title="Mekong"></div>
+                <div class="map-point low"    style="top:65%;left:15%"  title="Amazon"></div>
+                <div class="map-point high"   style="top:30%;left:60%"  title="Ganges"></div>
+                <div class="map-point medium" style="top:75%;left:70%"  title="Murray"></div>
+                <p style="opacity:.55;margin-top:18px;">856 hydrological monitoring stations worldwide</p>
+            </div>
+        </div>
+
+    </div>
+
+    
+    <div class="tab-panel eq-panel" id="panel-earthquake">
+
+        
+        <div class="hero eq-hero">
+            <h1>Earthquake Prediction System</h1>
+            <p>Advanced seismic ML analysis for earthquake risk assessment and early warning systems.</p>
+
+            
+            <div class="seismic-visualization">
+                <span class="seismo-label tl">LIVE SEISMOGRAPH</span>
+                <span class="seismo-label tr" id="seismo-station">STA: HHZ.CI.PAS</span>
+                <span class="seismo-label bl" id="seismo-time-label">00:00:00 UTC</span>
+                <div class="seismo-mag-badge" id="seismo-mag-badge">M <span id="seismo-cur-mag">2.1</span></div>
+                <div class="seismo-svg-wrap">
+                    <svg id="seismo-svg" width="100%" height="100%" preserveAspectRatio="none">
+                        <defs>
+                            <linearGradient id="seismoGrad" x1="0%" y1="0%" x2="100%" y2="0%">
+                                <stop offset="0%"   stop-color="rgba(231,76,60,0.1)"/>
+                                <stop offset="60%"  stop-color="#f97316"/>
+                                <stop offset="85%"  stop-color="#ef4444"/>
+                                <stop offset="100%" stop-color="#dc2626"/>
+                            </linearGradient>
+                            <filter id="glow">
+                                <feGaussianBlur stdDeviation="2.5" result="blur"/>
+                                <feMerge><feMergeNode in="blur"/><feMergeNode in="SourceGraphic"/></feMerge>
+                            </filter>
+                        </defs>
+                        <path id="seismo-path" filter="url(#glow)"/>
+                    </svg>
+                </div>
+                <div class="seismo-cursor" id="seismo-cursor"></div>
+            </div>
+
+            <div class="hero-stats">
+
+                <div class="hero-stat"><span class="stat-number">92.6%</span><span class="stat-label">Model Accuracy</span></div>
+                <div class="hero-stat"><span class="stat-number">1,247</span><span class="stat-label">Seismic Stations</span></div>
+                <div class="hero-stat"><span class="stat-number">24/7</span><span class="stat-label">Live Monitoring</span></div>
+            </div>
+        </div>
+
+        
+        <div class="status-dashboard">
+            <div class="status-card safe"><i class="fas fa-shield-alt"></i><div class="status-value" id="eq-risk-status">Low</div><div class="status-label">Earthquake Risk</div></div>
+            <div class="status-card warning"><i class="fas fa-wave-square"></i><div class="status-value" id="eq-seismic-status">2.1</div><div class="status-label">Seismic Activity (M)</div></div>
+            <div class="status-card info"><i class="fas fa-clock"></i><div class="status-value" id="eq-update-status">2 min</div><div class="status-label">Last Update</div></div>
+            <div class="status-card info"><i class="fas fa-bell"></i><div class="status-value" id="eq-alerts-count">3</div><div class="status-label">Active Alerts</div></div>
+        </div>
+
+        
+        <div class="prediction-panel eq-panel">
+            <div class="input-section">
+                <h2 class="section-title"><i class="fas fa-cogs"></i> Seismic Data Input</h2>
+                <form id="eq-form">
+                    <div style="display:grid;grid-template-columns:1fr;gap:1rem;">
+                        <div class="form-group">
+                            <label>P-Wave Velocity (km/s)</label>
+                            <input type="number" id="e-pwave" min="3" max="10" step="0.1" value="6.0">
+                        </div>
+                        <div class="form-group">
+                            <label>S-Wave Velocity (km/s)</label>
+                            <input type="number" id="e-swave" min="2" max="6" step="0.1" value="3.5">
+                        </div>
+                        <div class="form-group">
+                            <label>Micro Tremors (per hr)</label>
+                            <input type="number" id="e-tremors" min="0" max="50" step="1" value="8">
+                        </div>
+                        <div class="form-group">
+                            <label>Fault Distance (km)</label>
+                            <input type="number" id="e-fault" min="0" max="200" step="1" value="35">
+                        </div>
+                        <div class="form-group">
+                            <label>Rock Density (g/cm³)</label>
+                            <input type="number" id="e-density" min="2" max="4" step="0.1" value="2.8">
+                        </div>
+                        <div class="form-group">
+                            <label>Crustal Thickness (km)</label>
+                            <input type="number" id="e-crustal" min="20" max="70" step="1" value="38">
+                        </div>
+                        <div class="form-group">
+                            <label>Ground Water (%)</label>
+                            <input type="number" id="e-water" min="0" max="100" step="5" value="65">
+                        </div>
+                        <div class="form-group">
+                            <label>Geological Region</label>
+                            <select id="e-region">
+                                <option value="pacific-ring">Pacific Ring of Fire</option>
+                                <option value="mediterranean">Mediterranean Belt</option>
+                                <option value="himalayan">Himalayan Belt</option>
+                                <option value="mid-atlantic">Mid-Atlantic Ridge</option>
+                                <option value="other">Other Region</option>
+                            </select>
+                        </div>
+                    </div>
+                    <button type="submit" class="btn btn-eq"><i class="fas fa-chart-line"></i> Analyze Earthquake Risk</button>
+                </form>
+            </div>
+            <div class="results-section eq-panel">
+                <h2 class="section-title"><i class="fas fa-chart-pie"></i> AI Risk Assessment</h2>
+                <div class="risk-gauge">
+                    <svg class="gauge-svg" viewBox="0 0 200 200">
+                        <circle class="gauge-bg" cx="100" cy="100" r="80" stroke-dasharray="502.4" stroke-dashoffset="0"></circle>
+                        <circle class="gauge-progress" cx="100" cy="100" r="80" stroke="var(--eq-primary)"
+                                stroke-dasharray="502.4" stroke-dashoffset="361" id="eq-gauge-progress"></circle>
+                    </svg>
+                    <div class="gauge-text">
+                        <div class="gauge-value" id="eq-gauge-pct">28%</div>
+                        <div class="gauge-label">Seismic Risk</div>
+                    </div>
+                </div>
+                <div class="prediction-results">
+                    <div class="result-item"><strong>Risk Level:</strong><span id="eq-result-level">Low Risk</span></div>
+                    <div class="result-item"><strong>Est. Magnitude:</strong><span id="eq-result-mag">2.8 – 3.5</span></div>
+                    <div class="result-item"><strong>Occurrence Probability:</strong><span id="eq-result-prob">28%</span></div>
+                    <div class="result-item"><strong>Model Confidence:</strong><span id="eq-result-conf">88%</span></div>
+                    <div class="result-item"><strong>Risk Classification:</strong><span id="eq-result-class">Low</span></div>
+                </div>
+            </div>
+        </div>
+
+        
+        <div class="charts-section">
+            <div class="chart-card">
+                <h3 class="section-title eq-panel"><i class="fas fa-wave-square"></i> Seismic Activity Timeline</h3>
+                <div class="chart-container"><canvas id="eq-seismic-chart"></canvas></div>
+            </div>
+            <div class="chart-card">
+                <h3 class="section-title eq-panel"><i class="fas fa-radar"></i> Risk Factors Radar</h3>
+                <div class="chart-container"><canvas id="eq-radar-chart"></canvas></div>
+            </div>
+        </div>
+
+        
+        <div id="eq-alerts" class="alert-system">
+            <h2 class="section-title eq-panel"><i class="fas fa-bell"></i> Seismic Alert System</h2>
+            <div class="alert-item low"><i class="fas fa-info-circle"></i><div><strong>Low Risk Alert</strong><br>Minor seismic activity detected in Northern California. Continue standard monitoring.</div></div>
+            <div class="alert-item medium"><i class="fas fa-exclamation-triangle"></i><div><strong>Moderate Warning</strong><br>Increased micro-tremor activity near San Andreas Fault. Enhanced monitoring recommended.</div></div>
+            <div class="alert-item high"><i class="fas fa-exclamation-circle"></i><div><strong>High Risk Advisory</strong><br>Unusual P-wave velocity patterns detected. Prepare emergency response protocols now.</div></div>
+        </div>
+
+        
+        <div class="regional-map">
+            <h2 class="section-title eq-panel"><i class="fas fa-globe-americas"></i> Global Seismic Monitoring Network</h2>
+
+            <div class="map-container eq-map">
+                <div class="eq-map-inner">
+
+                    
+                    <div class="seismic-map-topbar">
+                        <div class="map-title">
+                            <div class="live-dot"></div>
+                            GLOBAL SEISMIC NETWORK — REAL-TIME
+                        </div>
+                        <div class="seismic-map-stats">
+                            <div class="map-stat-pill"><i class="fas fa-broadcast-tower"></i> <span id="map-stations">1,247</span> Stations</div>
+                            <div class="map-stat-pill"><i class="fas fa-fire"></i> <span id="map-events-24h">38</span> Events/24h</div>
+                            <div class="map-stat-pill"><i class="fas fa-exclamation-triangle"></i> <span id="map-alerts-live">4</span> Alerts</div>
+                        </div>
+                    </div>
+
+                    
+                    <div class="seismic-map-body" id="seismic-map-body">
+
+                        
+                        <svg id="world-map-svg" viewBox="0 0 1000 500" xmlns="http://www.w3.org/2000/svg">
+                            
+                            
+                            <path d="M120,60 L200,50 L260,70 L280,110 L260,150 L230,160 L200,180 L170,210 L150,250 L130,280 L110,300 L90,290 L80,260 L100,220 L95,180 L80,150 L90,100 Z" fill="rgba(255,255,255,0.06)" stroke="rgba(255,255,255,0.15)" stroke-width="1"/>
+                            
+                            <path d="M210,20 L250,15 L270,35 L255,55 L220,55 Z" fill="rgba(255,255,255,0.04)" stroke="rgba(255,255,255,0.1)" stroke-width="1"/>
+                            
+                            <path d="M150,250 L160,
+                            <path d="M160,290 L200,280 L230,300 L250,340 L260,390 L245,440 L215,470 L185,455 L165,420 L150,370 L140,330 L145,300 Z" fill="rgba(255,255,255,0.06)" stroke="rgba(255,255,255,0.15)" stroke-width="1"/>
+                            
+                            <path d="M430,50 L490,45 L510,65 L500,90 L480,100 L460,95 L440,110 L420,100 L415,75 Z" fill="rgba(255,255,255,0.06)" stroke="rgba(255,255,255,0.15)" stroke-width="1"/>
+                            
+                            <path d="M430,130 L490,120 L520,150 L540,200 L550,260 L540,330 L510,370 L470,380 L440,355 L420,300 L410,240 L415,180 Z" fill="rgba(255,255,255,0.06)" stroke="rgba(255,255,255,0.15)" stroke-width="1"/>
+                            
+                            <path d="M510,40 L650,30 L780,40 L850,60 L870,100 L840,130 L780,140 L720,130 L680,150 L640,140 L600,120 L560,110 L520,100 L505,80 Z" fill="rgba(255,255,255,0.06)" stroke="rgba(255,255,255,0.15)" stroke-width="1"/>
+                            
+                            <path d="M620,140 L660,145 L670,190 L650,230 L620,240 L600,210 L605,170 Z" fill="rgba(255,255,255,0.05)" stroke="rgba(255,255,255,0.1)" stroke-width="0.8"/>
+                            
+                            <path d="M730,140 L790,145 L810,170 L800,195 L770,200 L745,185 L735,160 Z" fill="rgba(255,255,255,0.05)" stroke="rgba(255,255,255,0.1)" stroke-width="0.8"/>
+                            
+                            <path d="M830,75 L845,70 L855,90 L848,110 L835,115 L825,95 Z" fill="rgba(255,255,255,0.05)" stroke="rgba(255,255,255,0.1)" stroke-width="0.8"/>
+                            
+                            <path d="M740,290 L840,280 L880,310 L890,360 L870,400 L820,420 L760,415 L720,380 L715,330 Z" fill="rgba(255,255,255,0.06)" stroke="rgba(255,255,255,0.15)" stroke-width="1"/>
+                            
+                            <path d="M900,380 L915,375 L920,395 L910,410 L898,400 Z" fill="rgba(255,255,255,0.04)" stroke="rgba(255,255,255,0.1)" stroke-width="0.8"/>
+                        </svg>
+
+                        
+                        <svg id="tectonic-svg" viewBox="0 0 1000 500" xmlns="http://www.w3.org/2000/svg">
+                            
+                            <path d="M100,80 Q90,150 95,220 Q100,290 130,340 Q160,390 185,450" fill="none" stroke="#ef4444" stroke-width="2" stroke-dasharray="6,4"/>
+                            <path d="M260,80 Q280,120 290,180 Q300,240 285,300" fill="none" stroke="#ef4444" stroke-width="1.5" stroke-dasharray="5,4"/>
+                            <path d="M750,50 Q800,80 840,130 Q870,180 870,250 Q870,320 850,380 Q830,430 800,460" fill="none" stroke="#ef4444" stroke-width="2" stroke-dasharray="6,4"/>
+                            <path d="M820,60 Q850,80 870,110" fill="none" stroke="#ef4444" stroke-width="1.5" stroke-dasharray="5,4"/>
+                            
+                            <path d="M340,30 Q345,100 348,200 Q350,300 352,450" fill="none" stroke="#3b82f6" stroke-width="1.5" stroke-dasharray="4,5"/>
+                            
+                            <path d="M420,100 Q500,95 580,105 Q660,115 730,130" fill="none" stroke="#f59e0b" stroke-width="1.5" stroke-dasharray="5,4"/>
+                            
+                            <path d="M490,200 Q500,260 505,330" fill="none" stroke="#a78bfa" stroke-width="1.5" stroke-dasharray="4,5"/>
+                        </svg>
+
+                        
+                        
+                        <div class="map-point critical" style="top:21%;left:84%" title="Japan">
+                            <div class="mp-tooltip"><strong>Honshu, Japan</strong><span>M 6.2 · 47 km depth · 3h ago</span></div>
+                        </div>
+                        
+                        <div class="map-point high" style="top:17%;left:10%" title="Alaska">
+                            <div class="mp-tooltip"><strong>Anchorage, Alaska</strong><span>M 5.4 · 32 km depth · 1h ago</span></div>
+                        </div>
+                        <div class="map-point high" style="top:52%;left:13%" title="California">
+                            <div class="mp-tooltip"><strong>San Andreas Fault, CA</strong><span>M 4.8 · 18 km depth · 5h ago</span></div>
+                        </div>
+                        <div class="map-point high" style="top:37%;left:45%" title="Turkey">
+                            <div class="mp-tooltip"><strong>North Anatolian, Turkey</strong><span>M 5.1 · 22 km depth · 8h ago</span></div>
+                        </div>
+                        
+                        <div class="map-point medium" style="top:44%;left:71%" title="Philippines">
+                            <div class="mp-tooltip"><strong>Manila Trench, Philippines</strong><span>M 3.9 · 55 km depth · 2h ago</span></div>
+                        </div>
+                        <div class="map-point medium" style="top:27%;left:31%" title="Iceland">
+                            <div class="mp-tooltip"><strong>Reykjanes Ridge, Iceland</strong><span>M 3.5 · 10 km depth · 6h ago</span></div>
+                        </div>
+                        <div class="map-point medium" style="top:58%;left:61%" title="Indonesia">
+                            <div class="mp-tooltip"><strong>Sumatra, Indonesia</strong><span>M 4.2 · 90 km depth · 4h ago</span></div>
+                        </div>
+                        <div class="map-point medium" style="top:43%;left:52%" title="Greece">
+                            <div class="mp-tooltip"><strong>Aegean Sea, Greece</strong><span>M 3.7 · 14 km depth · 9h ago</span></div>
+                        </div>
+                        
+                        <div class="map-point low" style="top:66%;left:41%" title="Chile">
+                            <div class="mp-tooltip"><strong>Atacama, Chile</strong><span>M 2.8 · 120 km depth · 11h ago</span></div>
+                        </div>
+                        <div class="map-point low" style="top:75%;left:80%" title="New Zealand">
+                            <div class="mp-tooltip"><strong>South Island, NZ</strong><span>M 2.4 · 8 km depth · 14h ago</span></div>
+                        </div>
+                        <div class="map-point low" style="top:36%;left:60%" title="Pakistan">
+                            <div class="mp-tooltip"><strong>Hindu Kush, Pakistan</strong><span>M 2.1 · 210 km depth · 18h ago</span></div>
+                        </div>
+
+                        
+                        <div class="mag-legend">
+                            <div class="mag-legend-title">Magnitude</div>
+                            <div class="mag-legend-items">
+                                <div class="mag-legend-row">
+                                    <div class="mag-dot" style="width:16px;height:16px;background:#dc2626;box-shadow:0 0 8px #dc2626;border-radius:50%;"></div>
+                                    <span style="color:#fca5a5">M ≥ 6.0 — Critical</span>
+                                </div>
+                                <div class="mag-legend-row">
+                                    <div class="mag-dot" style="width:13px;height:13px;background:#ef4444;box-shadow:0 0 6px #ef4444;border-radius:50%;"></div>
+                                    <span style="color:#fca5a5">M 5.0–5.9 — High</span>
+                                </div>
+                                <div class="mag-legend-row">
+                                    <div class="mag-dot" style="width:10px;height:10px;background:#f59e0b;box-shadow:0 0 5px #f59e0b;border-radius:50%;"></div>
+                                    <span style="color:#fde68a">M 3.5–4.9 — Moderate</span>
+                                </div>
+                                <div class="mag-legend-row">
+                                    <div class="mag-dot" style="width:8px;height:8px;background:#10b981;box-shadow:0 0 4px #10b981;border-radius:50%;"></div>
+                                    <span style="color:#a7f3d0">M &lt; 3.5 — Minor</span>
+                                </div>
+                            </div>
+                        </div>
+
+                        
+                        <div class="richter-bar-wrap">
+                            <div class="richter-title">Richter Scale Activity</div>
+                            <div class="richter-scale" id="richter-scale">
+                                <div class="richter-seg" id="rs-1" style="height:30%;background:#10b981;border-radius:2px 2px 0 0;"></div>
+                                <div class="richter-seg" id="rs-2" style="height:45%;background:#34d399;"></div>
+                                <div class="richter-seg" id="rs-3" style="height:55%;background:#fbbf24;"></div>
+                                <div class="richter-seg" id="rs-4" style="height:70%;background:#f59e0b;"></div>
+                                <div class="richter-seg" id="rs-5" style="height:85%;background:#ef4444;"></div>
+                                <div class="richter-seg" id="rs-6" style="height:60%;background:#dc2626;"></div>
+                                <div class="richter-seg" id="rs-7" style="height:35%;background:#991b1b;"></div>
+                                <div class="richter-seg" id="rs-8" style="height:20%;background:#7f1d1d;"></div>
+                                <div class="richter-seg" id="rs-9" style="height:10%;background:#450a0a;"></div>
+                            </div>
+                            <div class="richter-labels">
+                                <span>1</span><span>2</span><span>3</span><span>4</span><span>5</span><span>6</span><span>7</span><span>8</span><span>9</span>
+                            </div>
+                        </div>
+
+                        
+                        <div class="seismic-ticker">
+                            <span class="ticker-inner" id="map-ticker">
+                                🔴 M6.2 Honshu, Japan (3h ago) &nbsp;●&nbsp; 🟠 M5.4 Anchorage, Alaska (1h ago) &nbsp;●&nbsp; 🟠 M4.8 San Andreas Fault, CA (5h ago) &nbsp;●&nbsp; 🟡 M3.9 Manila Trench, Philippines (2h ago) &nbsp;●&nbsp; 🟡 M3.7 Aegean Sea, Greece (9h ago) &nbsp;●&nbsp; 🟢 M2.8 Atacama, Chile (11h ago) &nbsp;●&nbsp; 🟢 M2.4 South Island, NZ (14h ago) &nbsp;●&nbsp;
+                            </span>
+                        </div>
+
+                    </div>
+                </div>
+            </div>
+        </div>
+
+    </div>
+
+    
+    <div class="tab-panel" id="panel-wildfire">
+        <div class="hero wildfire-hero">
+            <h1>Wildfire Risk System</h1>
+            <p>Advanced vegetation, temperature and wind-driven wildfire risk estimates for rapid alerts and prevention.</p>
+            <div class="hero-stats">
+
+                <div class="hero-stat"><span class="stat-number">88.1%</span><span class="stat-label">Model Accuracy</span></div>
+                <div class="hero-stat"><span class="stat-number">12,430</span><span class="stat-label">KM² Monitored</span></div>
+                <div class="hero-stat"><span class="stat-number">Real-time</span><span class="stat-label">Data Feed</span></div>
+            </div>
+        </div>
+
+        
+        <div class="status-dashboard">
+            <div class="status-card safe"><i class="fas fa-shield-alt"></i><div class="status-value" id="wf-risk-status">Low</div><div class="status-label">Wildfire Risk</div></div>
+            <div class="status-card info"><i class="fas fa-thermometer-half"></i><div class="status-value" id="wf-temp-status">32°C</div><div class="status-label">Temperature</div></div>
+            <div class="status-card warning"><i class="fas fa-wind"></i><div class="status-value" id="wf-wind-status">22km/h</div><div class="status-label">Wind Speed</div></div>
+            <div class="status-card info"><i class="fas fa-bell"></i><div class="status-value" id="wf-alerts-count">1</div><div class="status-label">Active Alerts</div></div>
+        </div>
+
+        
+        <div class="prediction-panel wildfire-panel">
+            <div class="input-section">
+                <h2 class="section-title"><i class="fas fa-fire"></i> Wildfire Environmental Data Input</h2>
+                <form id="wf-form">
+                    <div style="display:grid;grid-template-columns:1fr 1fr;gap:2rem;margin-bottom:2.5rem;">
+                        <div class="form-group">
+                            <label>Temperature (°C)</label>
+                            <div class="input-wrapper">
+                                <input type="number" id="wf-temp" min="10" max="55" step="0.1" value="32">
+                                <span class="input-hint">10–55°C</span>
+                            </div>
+                        </div>
+                        <div class="form-group">
+                            <label>Humidity (%)</label>
+                            <div class="input-wrapper">
+                                <input type="number" id="wf-humidity" min="0" max="100" step="1" value="18">
+                                <span class="input-hint">0–100%</span>
+                            </div>
+                        </div>
+                        <div class="form-group">
+                            <label>Wind Speed (km/h)</label>
+                            <div class="input-wrapper">
+                                <input type="number" id="wf-wind" min="0" max="100" step="1" value="22">
+                                <span class="input-hint">0–100 km/h</span>
+                            </div>
+                        </div>
+                        <div class="form-group">
+                            <label>Vegetation Dryness (0–1)</label>
+                            <div class="input-wrapper">
+                                <input type="number" id="wf-fuel" min="0" max="1" step="0.01" value="0.74">
+                                <span class="input-hint">0 (wet) to 1 (dry)</span>
+                            </div>
+                        </div>
+                        <div class="form-group">
+                            <label>Elevation (m)</label>
+                            <div class="input-wrapper">
+                                <input type="number" id="wf-elev" min="0" max="4000" step="10" value="600">
+                                <span class="input-hint">Sea level to alpine</span>
+                            </div>
+                        </div>
+                        <div class="form-group">
+                            <label>Slope (degrees)</label>
+                            <div class="input-wrapper">
+                                <input type="number" id="wf-slope" min="0" max="60" step="1" value="20">
+                                <span class="input-hint">0–60° steepness</span>
+                            </div>
+                        </div>
+                        <div class="form-group">
+                            <label>Recent Fires (30 days)</label>
+                            <div class="input-wrapper">
+                                <input type="number" id="wf-recent" min="0" max="20" step="1" value="1">
+                                <span class="input-hint">Count of fires</span>
+                            </div>
+                        </div>
+                        <div class="form-group">
+                            <label>Fuel Load (t/ha)</label>
+                            <div class="input-wrapper">
+                                <input type="number" id="wf-fuelload" min="0" max="15" step="0.5" value="7">
+                                <span class="input-hint">0–15 tons/hectare</span>
+                            </div>
+                        </div>
+                    </div>
+                    <button type="submit" class="btn btn-wildfire"><i class="fas fa-chart-line"></i> Analyze Wildfire Risk</button>
+                </form>
+            </div>
+            <div class="results-section wildfire-panel">
+                <h2 class="section-title"><i class="fas fa-chart-pie"></i> AI Risk Assessment</h2>
+                <div class="risk-gauge">
+                    <svg class="gauge-svg" viewBox="0 0 200 200">
+                        <circle class="gauge-bg" cx="100" cy="100" r="80" stroke-dasharray="502.4" stroke-dashoffset="0"></circle>
+                        <circle class="gauge-progress" cx="100" cy="100" r="80" stroke="var(--wildfire-primary)"
+                                stroke-dasharray="502.4" stroke-dashoffset="400" id="wf-gauge-progress"></circle>
+                    </svg>
+                    <div class="gauge-text">
+                        <div class="gauge-value" id="wf-gauge-pct">18%</div>
+                        <div class="gauge-label">Wildfire Risk</div>
+                    </div>
+                </div>
+                <div class="prediction-results">
+                    <div class="result-item"><strong>Risk Level:</strong><span id="wf-result-level">Low Risk</span></div>
+                    <div class="result-item"><strong>Fire Probability:</strong><span id="wf-result-prob">18%</span></div>
+                    <div class="result-item"><strong>Time Window:</strong><span id="wf-result-time">12–36 hours</span></div>
+                    <div class="result-item"><strong>Model Confidence:</strong><span id="wf-result-conf">86%</span></div>
+                    <div class="result-item"><strong>Recommendation:</strong><span id="wf-result-rec">Standard vigilance</span></div>
+                </div>
+            </div>
+        </div>
+
+        
+        <div class="charts-section">
+            <div class="chart-card">
+                <h3 class="section-title wildfire-panel"><i class="fas fa-chart-area"></i> Temperature & Wind Trends</h3>
+                <div class="chart-container"><canvas id="wf-fire-chart"></canvas></div>
+            </div>
+            <div class="chart-card">
+                <h3 class="section-title wildfire-panel"><i class="fas fa-radar"></i> Risk Factors Radar</h3>
+                <div class="chart-container"><canvas id="wf-radar-chart"></canvas></div>
+            </div>
+        </div>
+
+        
+        <div id="wf-alerts" class="alert-system">
+            <h2 class="section-title wildfire-panel"><i class="fas fa-bell"></i> Wildfire Alert System</h2>
+            <div class="alert-item low"><i class="fas fa-info-circle"></i><div><strong>Normal Conditions</strong><br>Environmental conditions are favorable. Fire risk is minimal. Maintain standard monitoring protocols.</div></div>
+            <div class="alert-item medium"><i class="fas fa-exclamation-triangle"></i><div><strong>Fire Weather Advisory</strong><br>Elevated temperatures and low humidity detected. Increase vigilance and prepare prevention measures.</div></div>
+        </div>
+
+        
+        <div class="regional-map">
+            <h2 class="section-title wildfire-panel"><i class="fas fa-globe-americas"></i> Global Wildfire Monitoring Network</h2>
+            <div class="map-container wildfire-map">
+                <div class="map-point low"    style="top:20%;left:25%"  title="California"></div>
+                <div class="map-point high"   style="top:30%;left:75%"  title="Australia"></div>
+                <div class="map-point medium" style="top:45%;left:45%"  title="Africa"></div>
+                <div class="map-point low"    style="top:55%;left:80%"  title="Indonesia"></div>
+                <div class="map-point medium" style="top:70%;left:35%"  title="South America"></div>
+                <div class="map-point high"   style="top:35%;left:60%"  title="Mediterranean"></div>
+                <div class="map-point low"    style="top:65%;left:65%"  title="Southern Africa"></div>
+                <p style="opacity:.55;margin-top:18px;">12,430 km² of active forest coverage monitored 24/7</p>
+            </div>
+        </div>
+
+    </div>
+
+    
+    <div class="tab-panel" id="panel-storm">
+        <div class="hero storm-hero">
+            <h1>Storm / Cyclone System</h1>
+            <p>Advanced wind, pressure and sea-state combined model for storm surge and wind damage forecasting.</p>
+            <div class="hero-stats">
+
+                <div class="hero-stat"><span class="stat-number">90.4%</span><span class="stat-label">Model Accuracy</span></div>
+                <div class="hero-stat"><span class="stat-number">520</span><span class="stat-label">Coastal Sensors</span></div>
+                <div class="hero-stat"><span class="stat-number">24/7</span><span class="stat-label">Live Monitoring</span></div>
+            </div>
+        </div>
+
+        
+        <div class="status-dashboard">
+            <div class="status-card safe"><i class="fas fa-shield-alt"></i><div class="status-value" id="st-risk-status">Moderate</div><div class="status-label">Storm Risk</div></div>
+            <div class="status-card warning"><i class="fas fa-wind"></i><div class="status-value" id="st-wind-status">85km/h</div><div class="status-label">Max Wind</div></div>
+            <div class="status-card info"><i class="fas fa-water"></i><div class="status-value" id="st-pressure-status">980hPa</div><div class="status-label">Pressure</div></div>
+            <div class="status-card info"><i class="fas fa-bell"></i><div class="status-value" id="st-alerts-count">2</div><div class="status-label">Active Alerts</div></div>
+        </div>
+
+        
+        <div class="prediction-panel storm-panel">
+            <div class="input-section">
+                <h2 class="section-title"><i class="fas fa-cloud-showers-heavy"></i> Storm Meteorological Data Input</h2>
+                <form id="st-form">
+                    <div style="display:grid;grid-template-columns:1fr 1fr;gap:2rem;margin-bottom:2.5rem;">
+                        <div class="form-group">
+                            <label>Max Wind Speed (km/h)</label>
+                            <div class="input-wrapper">
+                                <input type="number" id="st-wind" min="0" max="300" step="1" value="85">
+                                <span class="input-hint">0–300 km/h</span>
+                            </div>
+                        </div>
+                        <div class="form-group">
+                            <label>Central Pressure (hPa)</label>
+                            <div class="input-wrapper">
+                                <input type="number" id="st-press" min="850" max="1050" step="1" value="980">
+                                <span class="input-hint">850–1050 hPa</span>
+                            </div>
+                        </div>
+                        <div class="form-group">
+                            <label>Sea Surface Temperature (°C)</label>
+                            <div class="input-wrapper">
+                                <input type="number" id="st-sea" min="0" max="35" step="0.1" value="28">
+                                <span class="input-hint">0–35°C warm water</span>
+                            </div>
+                        </div>
+                        <div class="form-group">
+                            <label>Coastal Slope (degrees)</label>
+                            <div class="input-wrapper">
+                                <input type="number" id="st-slope" min="0" max="45" step="0.1" value="3">
+                                <span class="input-hint">0–45° angle</span>
+                            </div>
+                        </div>
+                        <div class="form-group">
+                            <label>Sea Elevation (m)</label>
+                            <div class="input-wrapper">
+                                <input type="number" id="st-elev" min="0" max="8000" step="50" value="200">
+                                <span class="input-hint">Bathymetry depth</span>
+                            </div>
+                        </div>
+                        <div class="form-group">
+                            <label>Latitude (degrees)</label>
+                            <div class="input-wrapper">
+                                <input type="number" id="st-lat" min="-90" max="90" step="1" value="15">
+                                <span class="input-hint">-90° to +90°</span>
+                            </div>
+                        </div>
+                        <div class="form-group">
+                            <label>Recent Storms (60 days)</label>
+                            <div class="input-wrapper">
+                                <input type="number" id="st-recent" min="0" max="10" step="1" value="1">
+                                <span class="input-hint">Storm count</span>
+                            </div>
+                        </div>
+                        <div class="form-group">
+                            <label>Ocean Current (m/s)</label>
+                            <div class="input-wrapper">
+                                <input type="number" id="st-current" min="-3" max="3" step="0.1" value="0.5">
+                                <span class="input-hint">-3 to +3 m/s</span>
+                            </div>
+                        </div>
+                    </div>
+                    <button type="submit" class="btn btn-storm"><i class="fas fa-chart-line"></i> Analyze Storm Risk</button>
+                </form>
+            </div>
+            <div class="results-section storm-panel">
+                <h2 class="section-title"><i class="fas fa-chart-pie"></i> AI Risk Assessment</h2>
+                <div class="risk-gauge">
+                    <svg class="gauge-svg" viewBox="0 0 200 200">
+                        <circle class="gauge-bg" cx="100" cy="100" r="80" stroke-dasharray="502.4" stroke-dashoffset="0"></circle>
+                        <circle class="gauge-progress" cx="100" cy="100" r="80" stroke="var(--storm-primary)"
+                                stroke-dasharray="502.4" stroke-dashoffset="420" id="st-gauge-progress"></circle>
+                    </svg>
+                    <div class="gauge-text">
+                        <div class="gauge-value" id="st-gauge-pct">42%</div>
+                        <div class="gauge-label">Storm Risk</div>
+                    </div>
+                </div>
+                <div class="prediction-results">
+                    <div class="result-item"><strong>Risk Level:</strong><span id="st-result-level">Moderate Risk</span></div>
+                    <div class="result-item"><strong>Storm Probability:</strong><span id="st-result-prob">42%</span></div>
+                    <div class="result-item"><strong>Surge Probability:</strong><span id="st-result-surge">36%</span></div>
+                    <div class="result-item"><strong>Model Confidence:</strong><span id="st-result-conf">89%</span></div>
+                    <div class="result-item"><strong>Recommendation:</strong><span id="st-result-rec">Secure loose items & monitor advisory</span></div>
+                </div>
+            </div>
+        </div>
+
+        
+        <div class="charts-section">
+            <div class="chart-card">
+                <h3 class="section-title storm-panel"><i class="fas fa-chart-area"></i> Wind & Pressure Evolution</h3>
+                <div class="chart-container"><canvas id="st-weather-chart"></canvas></div>
+            </div>
+            <div class="chart-card">
+                <h3 class="section-title storm-panel"><i class="fas fa-radar"></i> Risk Factors Radar</h3>
+                <div class="chart-container"><canvas id="st-radar-chart"></canvas></div>
+            </div>
+        </div>
+
+        
+        <div id="st-alerts" class="alert-system">
+            <h2 class="section-title storm-panel"><i class="fas fa-bell"></i> Storm Alert System</h2>
+            <div class="alert-item low"><i class="fas fa-info-circle"></i><div><strong>Storm Watch</strong><br>Tropical system developing offshore. Continue monitoring for updates on track and intensity.</div></div>
+            <div class="alert-item medium"><i class="fas fa-exclamation-triangle"></i><div><strong>Storm Warning</strong><br>Strong winds and heavy rainfall expected. Evacuate low-lying coastal areas and prepare shelters.</div></div>
+        </div>
+
+        
+        <div class="regional-map">
+            <h2 class="section-title storm-panel"><i class="fas fa-globe-americas"></i> Global Storm Monitoring Network</h2>
+            <div class="map-container storm-map">
+                <div class="map-point medium" style="top:25%;left:20%"  title="Atlantic Hurricane Zone"></div>
+                <div class="map-point high"   style="top:35%;left:75%"  title="Western Pacific Typhoons"></div>
+                <div class="map-point medium" style="top:50%;left:30%"  title="Indian Ocean"></div>
+                <div class="map-point low"    style="top:55%;left:85%"  title="Southwest Pacific"></div>
+                <div class="map-point medium" style="top:65%;left:15%"  title="South Atlantic"></div>
+                <div class="map-point high"   style="top:40%;left:60%"  title="Bay of Bengal"></div>
+                <div class="map-point medium" style="top:70%;left:70%"  title="South Indian"></div>
+                <p style="opacity:.55;margin-top:18px;">520 coastal meteorological stations with real-time data transmission</p>
+            </div>
+        </div>
+
+    </div>
+
+</div>
+</div>
+
+
+<footer class="footer">
+    <div class="container">
+        <div class="footer-brand">
+            <i class="fas fa-water"></i>
+            <span>DisasterAI Pro</span>
+            <i class="fas fa-mountain"></i>
+        </div>
+        <div class="footer-links">
+            <a href="#overview">Overview</a>
+            <a href="#flood">Flood System</a>
+            <a href="#earthquake">Earthquake System</a>
+            <a href="#monitoring">Monitoring</a>
+        </div>
+        <p>&copy; 2026 DisasterAI Pro — AI-Powered Flood & Earthquake Prediction Platform</p>
+    </div>
+</footer>
+
+
+<script>
+// ======================================================
+//  TAB SWITCHER
+// ======================================================
+function switchTab(tab) {
+    const panels   = document.querySelectorAll('.tab-panel');
+    const tabBtns  = document.querySelectorAll('.tab-btn');
+    const navLinks = document.querySelectorAll('.nav-link');
+
+    panels.forEach(p => p.classList.remove('active'));
+    tabBtns.forEach(b => b.classList.remove('active'));
+
+    document.getElementById(`panel-${tab}`).classList.add('active');
+    document.getElementById(`tab-${tab}`).classList.add('active');
+
+    navLinks.forEach(l => {
+        if (l.getAttribute('href') === `#${tab}`) l.classList.add('active');
+        else l.classList.remove('active');
+    });
+
+    // scroll to tab
+    document.getElementById(`panel-${tab}`).scrollIntoView({ behavior: 'smooth', block: 'start' });
+}
+
+// nav link handler
+document.querySelectorAll('.nav-link').forEach(link => {
+    link.addEventListener('click', e => {
+        e.preventDefault();
+        const id = link.getAttribute('href').replace('#','');
+        if (id === 'flood' || id === 'earthquake') {
+            switchTab(id);
+        } else {
+            const el = document.getElementById(id);
+            if (el) el.scrollIntoView({ behavior: 'smooth' });
+        }
+        document.querySelectorAll('.nav-link').forEach(l => l.classList.remove('active'));
+        link.classList.add('active');
+    });
+});
+
+// ======================================================
+//  CHART COLOUR HELPERS
+// ======================================================
+const FLOOD_COLOR = '#3b82f6';
+const EQ_COLOR    = '#e74c3c';
+const GREEN       = '#10b981';
+
+function makeChartOptions(yMax) {
+    return {
+        responsive: true,
+        maintainAspectRatio: false,
+        scales: {
+            x: { grid: { color: 'rgba(255,255,255,0.08)' }, ticks: { color: '#94a3b8', maxTicksLimit: 8 } },
+            y: { beginAtZero: true, max: yMax,
+                 grid: { color: 'rgba(255,255,255,0.08)' }, ticks: { color: '#94a3b8' } }
+        },
+        plugins: {
+            legend: { labels: { color: '#cbd5e1', font: { size: 12 } } },
+            tooltip: { backgroundColor: 'rgba(0,0,0,0.8)', titleColor: '#fff', bodyColor: '#fff' }
+        }
+    };
+}
+
+function makeRadarOptions() {
+    return {
+        responsive: true,
+        maintainAspectRatio: false,
+        scales: {
+            r: {
+                beginAtZero: true, max: 1,
+                grid:        { color: 'rgba(255,255,255,0.15)' },
+                pointLabels: { color: '#cbd5e1', font: { size: 11 } },
+                ticks:       { display: false, backdropColor: 'transparent' }
+            }
+        },
+        plugins: {
+            legend:  { labels: { color: '#cbd5e1' } },
+            tooltip: { backgroundColor: 'rgba(0,0,0,0.8)' }
+        }
+    };
+}
+
+// ======================================================
+//  FLOOD PREDICTION ENGINE
+// ======================================================
+const FloodEngine = {
+    charts: {},
+
+    predict(d) {
+        const r  = Math.min(d.rainfall_mm/100,1)       * 0.3567;
+        const r7 = Math.min(d.rain7d/50,1)             * 0.1864;
+        const rv = Math.min(d.river_m/10,1)            * 0.1073;
+        const hu = (d.humidity/100)                    * 0.0862;
+        const el = Math.max(0,1-d.elevation/1000)      * 0.0844;
+        const sl = Math.max(0,1-d.slope/30)            * 0.0658;
+        const sp = (1-d.soil_perm)                     * 0.0579;
+        const tp = (Math.abs(d.temp-20)/40)            * 0.0554;
+
+        const base  = r+r7+rv+hu+el+sl+sp+tp;
+        const score = Math.min(1, base*(0.9+Math.random()*0.2));
+        const pct   = Math.round(score*100);
+        const level = pct<25?'Low Risk': pct<50?'Moderate Risk': pct<75?'High Risk':'Critical Risk';
+        const rec   = pct<25?'Continue normal activities':
+                      pct<50?'Monitor weather conditions':
+                      pct<75?'Prepare for potential flooding':
+                             'Take immediate precautions';
+        return { score, pct, level, confidence: Math.round(85+score*10), rec };
+    },
+
+    updateDisplay(p) {
+        const circ   = 2*Math.PI*80;
+        const offset = circ - (p.pct/100)*circ;
+        const el = document.getElementById('flood-gauge-progress');
+        el.style.strokeDashoffset = offset;
+
+        const colors = {'Low Risk':'#10b981','Moderate Risk':'#f59e0b','High Risk':'#f97316','Critical Risk':'#ef4444'};
+        el.style.stroke = colors[p.level];
+
+        document.getElementById('flood-gauge-pct').textContent   = `${p.pct}%`;
+        document.getElementById('flood-result-level').textContent = p.level;
+        document.getElementById('flood-result-prob').textContent  = `${p.pct}%`;
+        document.getElementById('flood-result-conf').textContent  = `${p.confidence}%`;
+        document.getElementById('flood-result-rec').textContent   = p.rec;
+
+        // overview
+        document.getElementById('flood-overview-pct').textContent   = `${p.pct}%`;
+        document.getElementById('flood-overview-bar').style.width   = `${p.pct}%`;
+        document.getElementById('flood-ov-level').textContent       = p.level.split(' ')[0];
+
+        // status card
+        document.getElementById('flood-risk-status').textContent = p.level.split(' ')[0];
+
+        this.updateRadar(p);
+    },
+
+    updateRadar(p) {
+        if (!this.charts.radar) return;
+        const d = FloodEngine.getFormData();
+        this.charts.radar.data.datasets[0].data = [
+            Math.min(0.9, d.rainfall_mm/100),
+            Math.min(0.8, d.rain7d/50),
+            Math.min(0.9, d.river_m/10),
+            d.humidity/100,
+            Math.max(0.05,1-d.elevation/1000),
+            1-d.soil_perm
+        ];
+        this.charts.radar.update('active');
+    },
+
+    getFormData() {
+        return {
+            rainfall_mm: parseFloat(document.getElementById('f-rainfall').value)||25,
+            river_m:     parseFloat(document.getElementById('f-river').value)||5,
+            temp:        parseFloat(document.getElementById('f-temp').value)||20,
+            humidity:    parseFloat(document.getElementById('f-humidity').value)||70,
+            elevation:   parseFloat(document.getElementById('f-elevation').value)||100,
+            slope:       parseFloat(document.getElementById('f-slope').value)||5,
+            soil_perm:   parseFloat(document.getElementById('f-soil').value)||0.5,
+            rain7d:      parseFloat(document.getElementById('f-rain7d').value)||20
+        };
+    },
+
+    initCharts() {
+        // Water chart
+        const labels = [], rain = [], river = [];
+        for (let i=23;i>=0;i--) {
+            const t = new Date(); t.setHours(t.getHours()-i);
+            labels.push(t.toLocaleTimeString('en-US',{hour:'2-digit',minute:'2-digit'}));
+            rain.push(Math.max(0,20+Math.sin(i*0.3)*15+(Math.random()-0.5)*10));
+            river.push(4+Math.sin(i*0.2)*1.5+(Math.random()-0.5)*0.5);
+        }
+
+        const wCtx = document.getElementById('flood-water-chart').getContext('2d');
+        this.charts.water = new Chart(wCtx, {
+            type: 'line',
+            data: {
+                labels,
+                datasets: [
+                    { label:'Rainfall (mm)', data:rain,  borderColor:FLOOD_COLOR, backgroundColor:'rgba(59,130,246,0.1)', borderWidth:3, fill:true, tension:0.4, yAxisID:'y' },
+                    { label:'River Level (m)',data:river, borderColor:'#0ea5e9',  backgroundColor:'rgba(14,165,233,0.1)', borderWidth:3, fill:true, tension:0.4, yAxisID:'y1' }
+                ]
+            },
+            options: {
+                responsive:true, maintainAspectRatio:false,
+                interaction:{ mode:'index', intersect:false },
+                scales:{
+                    x:{grid:{color:'rgba(255,255,255,0.08)'},ticks:{color:'#94a3b8',maxTicksLimit:8}},
+                    y:{type:'linear',position:'left',grid:{color:'rgba(255,255,255,0.08)'},ticks:{color:'#94a3b8'}},
+                    y1:{type:'linear',position:'right',grid:{drawOnChartArea:false},ticks:{color:'#94a3b8'}}
+                },
+                plugins:{legend:{labels:{color:'#cbd5e1'}},tooltip:{backgroundColor:'rgba(0,0,0,0.8)'}}
+            }
+        });
+
+        // Radar
+        const rCtx = document.getElementById('flood-radar-chart').getContext('2d');
+        this.charts.radar = new Chart(rCtx, {
+            type:'radar',
+            data:{
+                labels:['Rainfall','7-Day Avg','River Level','Humidity','Elevation','Soil Type'],
+                datasets:[
+                    {label:'Current',     data:[0.5,0.4,0.5,0.7,0.3,0.5], borderColor:FLOOD_COLOR, backgroundColor:'rgba(59,130,246,0.2)', borderWidth:3},
+                    {label:'Safe Threshold',data:[0.3,0.3,0.4,0.6,0.5,0.6], borderColor:GREEN,       backgroundColor:'rgba(16,185,129,0.1)',  borderWidth:2}
+                ]
+            },
+            options: makeRadarOptions()
+        });
+    },
+
+    setupEvents() {
+        document.getElementById('flood-form').addEventListener('submit', e => {
+            e.preventDefault();
+            const formData = this.getFormData();
+            const p = this.predict(formData);
+            this.updateDisplay(p);
+            try {
+                const token = localStorage.getItem('disasterai_access_token');
+                const headers = { 'Content-Type': 'application/json' };
+                if (token) headers['Authorization'] = `Bearer ${token}`;
+                fetch(`${AUTH_API_BASE}/api/predict/flood`, {
+                    method: 'POST',
+                    headers: headers,
+                    body: JSON.stringify({
+                        rainfall_mm: formData.rainfall_mm,
+                        river_level_m: formData.river_m,
+                        temperature_c: formData.temp,
+                        humidity_pct: formData.humidity,
+                        elevation_m: formData.elevation,
+                        slope_degrees: formData.slope,
+                        soil_permeability: formData.soil_perm,
+                        rainfall_7day_avg: formData.rain7d,
+                        location: 'Current Simulation'
+                    })
+                }).catch(() => {});
+            } catch(e) {}
+        });
+
+        document.querySelectorAll('#panel-flood input').forEach(inp => {
+            inp.addEventListener('input', () => {
+                clearTimeout(this._timer);
+                this._timer = setTimeout(() => {
+                    const p = this.predict(this.getFormData());
+                    this.updateDisplay(p);
+                }, 400);
+            });
+        });
+    },
+
+    startRealTime() {
+        setInterval(() => {
+            document.getElementById('flood-rainfall-status').textContent = `${(15+Math.random()*20).toFixed(1)}mm`;
+            document.getElementById('flood-river-status').textContent    = `${(4+Math.random()*2).toFixed(1)}m`;
+            document.getElementById('flood-alerts-count').textContent    = Math.floor(Math.random()*5)+1;
+            document.getElementById('flood-ov-rain').textContent  = `${(15+Math.random()*20).toFixed(0)}mm`;
+            document.getElementById('flood-ov-river').textContent = `${(4+Math.random()*2).toFixed(1)}m`;
+
+            if (this.charts.water) {
+                const now = new Date();
+                this.charts.water.data.labels.push(now.toLocaleTimeString('en-US',{hour:'2-digit',minute:'2-digit'}));
+                this.charts.water.data.labels.shift();
+                this.charts.water.data.datasets[0].data.push(Math.max(0,20+Math.random()*30));
+                this.charts.water.data.datasets[0].data.shift();
+                this.charts.water.data.datasets[1].data.push(4+Math.random()*2);
+                this.charts.water.data.datasets[1].data.shift();
+                this.charts.water.update('quiet');
+            }
+        }, 8000);
+    }
+};
+
+// ======================================================
+//  EARTHQUAKE PREDICTION ENGINE
+// ======================================================
+const EqEngine = {
+    charts: {},
+
+    predict(d) {
+        const pn = (d.pwave-3)/7;
+        const sn = (d.swave-2)/4;
+        const tn = Math.min(d.tremors/20,1);
+        const fn = Math.max(0,1-d.fault/100);
+        const dn = (d.density-2)/2;
+        const cn = 1-Math.abs(d.crustal-35)/35;
+        const wn = d.water/100;
+
+        const mults = {'pacific-ring':1.6,'mediterranean':1.35,'himalayan':1.45,'mid-atlantic':1.15,'other':1.0};
+        const base  = tn*0.28 + fn*0.22 + pn*0.18 + sn*0.15 + (1-cn)*0.10 + dn*0.04 + wn*0.03;
+        const score = Math.min(1, base*(mults[d.region]||1.0)*(0.92+Math.random()*0.14));
+        const pct   = Math.round(score*100);
+        const mag   = 1.8 + score*6.5;
+        const mRange= 0.3 + score*0.8;
+        const level = pct<25?'Low': pct<55?'Moderate': pct<80?'High':'Critical';
+        return { score, pct, mag, mMin:(mag-mRange).toFixed(1), mMax:(mag+mRange).toFixed(1),
+                 confidence:Math.round(82+score*15), level };
+    },
+
+    updateDisplay(p) {
+        const circ   = 2*Math.PI*80;
+        const offset = circ-(p.pct/100)*circ;
+        const el = document.getElementById('eq-gauge-progress');
+        el.style.strokeDashoffset = offset;
+
+        const colors = {'Low':'#10b981','Moderate':'#f59e0b','High':'#f97316','Critical':'#ef4444'};
+        el.style.stroke = colors[p.level];
+
+        document.getElementById('eq-gauge-pct').textContent     = `${p.pct}%`;
+        document.getElementById('eq-result-level').textContent  = `${p.level} Risk`;
+        document.getElementById('eq-result-mag').textContent    = `${p.mMin} – ${p.mMax}`;
+        document.getElementById('eq-result-prob').textContent   = `${p.pct}%`;
+        document.getElementById('eq-result-conf').textContent   = `${p.confidence}%`;
+        document.getElementById('eq-result-class').textContent  = p.level;
+
+        // overview
+        document.getElementById('eq-overview-pct').textContent  = `${p.pct}%`;
+        document.getElementById('eq-overview-bar').style.width  = `${p.pct}%`;
+        document.getElementById('eq-ov-mag').textContent        = p.mag.toFixed(1);
+        document.getElementById('eq-ov-prob').textContent       = `${p.pct}%`;
+        document.getElementById('eq-ov-level').textContent      = p.level;
+
+        // status card
+        document.getElementById('eq-risk-status').textContent   = p.level;
+
+        this.updateRadar(p);
+    },
+
+    updateRadar(p) {
+        if (!this.charts.radar) return;
+        this.charts.radar.data.datasets[0].data = [
+            Math.min(0.9, 0.3+p.score*0.6),
+            Math.min(0.8, 0.25+p.score*0.55),
+            Math.min(0.9, p.score*0.9),
+            Math.min(0.95,p.score*0.95),
+            Math.min(0.8, 0.2+p.score*0.6),
+            Math.min(0.85,0.15+p.score*0.7)
+        ];
+        this.charts.radar.update('active');
+    },
+
+    getFormData() {
+        return {
+            pwave:   parseFloat(document.getElementById('e-pwave').value)||6.0,
+            swave:   parseFloat(document.getElementById('e-swave').value)||3.5,
+            tremors: parseInt(document.getElementById('e-tremors').value)||8,
+            fault:   parseFloat(document.getElementById('e-fault').value)||35,
+            density: parseFloat(document.getElementById('e-density').value)||2.8,
+            crustal: parseFloat(document.getElementById('e-crustal').value)||38,
+            water:   parseFloat(document.getElementById('e-water').value)||65,
+            region:  document.getElementById('e-region').value||'other'
+        };
+    },
+
+    initCharts() {
+        const labels = [], seismic = [];
+        for (let i=23;i>=0;i--) {
+            const t = new Date(); t.setHours(t.getHours()-i);
+            labels.push(t.toLocaleTimeString('en-US',{hour:'2-digit',minute:'2-digit'}));
+            seismic.push(Math.max(0, 1.5+Math.sin(i*0.5)*0.5+(Math.random()-0.5)*0.7));
+        }
+
+        const sCtx = document.getElementById('eq-seismic-chart').getContext('2d');
+        this.charts.seismic = new Chart(sCtx, {
+            type:'line',
+            data:{ labels, datasets:[{
+                label:'Seismic Activity (M)', data:seismic,
+                borderColor:EQ_COLOR, backgroundColor:'rgba(231,76,60,0.12)',
+                borderWidth:3, fill:true, tension:0.4, pointRadius:3
+            }]},
+            options: makeChartOptions(5)
+        });
+
+        const rCtx = document.getElementById('eq-radar-chart').getContext('2d');
+        this.charts.radar = new Chart(rCtx, {
+            type:'radar',
+            data:{
+                labels:['P-Wave','S-Wave','Tremors','Fault Proximity','Rock Density','Crustal Stability'],
+                datasets:[
+                    {label:'Current',       data:[0.6,0.5,0.4,0.7,0.45,0.55], borderColor:EQ_COLOR, backgroundColor:'rgba(231,76,60,0.2)',  borderWidth:3},
+                    {label:'Safe Threshold',data:[0.4,0.4,0.2,0.8,0.50,0.70], borderColor:GREEN,    backgroundColor:'rgba(16,185,129,0.1)', borderWidth:2}
+                ]
+            },
+            options: makeRadarOptions()
+        });
+    },
+
+    setupEvents() {
+        document.getElementById('eq-form').addEventListener('submit', e => {
+            e.preventDefault();
+            const formData = this.getFormData();
+            const p = this.predict(formData);
+            this.updateDisplay(p);
+            try {
+                const token = localStorage.getItem('disasterai_access_token');
+                const headers = { 'Content-Type': 'application/json' };
+                if (token) headers['Authorization'] = `Bearer ${token}`;
+                fetch(`${AUTH_API_BASE}/api/predict/earthquake`, {
+                    method: 'POST',
+                    headers: headers,
+                    body: JSON.stringify({
+                        micro_tremors: formData.micro_tremors || 2.0,
+                        fault_distance_km: formData.fault_dist || 30.0,
+                        tectonic_stress: formData.tectonic_stress || 5.0,
+                        location: 'Current Simulation'
+                    })
+                }).catch(() => {});
+            } catch(e) {}
+        });
+
+        document.querySelectorAll('#panel-earthquake input, #panel-earthquake select').forEach(inp => {
+            inp.addEventListener('change', () => {
+                const p = this.predict(this.getFormData());
+                this.updateDisplay(p);
+            });
+        });
+    },
+
+    startRealTime() {
+        setInterval(() => {
+            const act = (1.5+Math.random()*2.5).toFixed(1);
+            document.getElementById('eq-seismic-status').textContent = act;
+            document.getElementById('eq-update-status').textContent  = `${Math.floor(Math.random()*9)+1} min`;
+            document.getElementById('eq-alerts-count').textContent   = Math.floor(Math.random()*6)+1;
+            document.getElementById('eq-ov-prob').textContent        = `${Math.floor(Math.random()*30)+10}%`;
+
+            // sync seismo badge
+            const badge = document.getElementById('seismo-cur-mag');
+            if (badge) badge.textContent = act;
+
+            if (this.charts.seismic) {
+                const now = new Date();
+                this.charts.seismic.data.labels.push(now.toLocaleTimeString('en-US',{hour:'2-digit',minute:'2-digit'}));
+                this.charts.seismic.data.labels.shift();
+                this.charts.seismic.data.datasets[0].data.push(Math.max(0,1.5+Math.random()*2.5));
+                this.charts.seismic.data.datasets[0].data.shift();
+                this.charts.seismic.update('quiet');
+            }
+        }, 10000);
+    }
+};
+
+// ======================================================
+//  WILDFIRE & STORM ENGINES (lightweight simulations)
+
+const FireEngine = {
+    predict(d) {
+        const t = Math.max(0, (d.temperature_c - 15) / 25);
+        const h = Math.max(0, (50 - d.humidity_pct) / 50);
+        const w = Math.min(1, d.wind_speed_kmh / 60);
+        const f = d.vegetation_dryness; // 0-1
+        const e = Math.max(0, (d.elevation_m) / 2000);
+        const s = Math.max(0, Math.min(1, d.slope_degrees / 40));
+        const rf = Math.min(1, d.recent_fires / 3);
+        const fl = Math.min(1, d.fuel_load / 12);
+        
+        const base = 0.30 * t + 0.25 * h + 0.20 * w + 0.10 * f + 0.05 * s + 0.04 * rf + 0.03 * e + 0.03 * fl;
+        const score = Math.min(1, base * (0.9 + Math.random() * 0.2));
+        const pct = Math.round(score * 100);
+        const level = pct < 25 ? 'Low' : pct < 45 ? 'Moderate' : pct < 70 ? 'High' : 'Critical';
+        const rec = pct < 25 ? 'Normal vigilance' : pct < 45 ? 'Reduce outdoor burning' : pct < 70 ? 'Prepare suppression resources' : 'Immediate evacuation possible';
+        return { score, pct, level, rec };
+    },
+    updateDisplay(p) {
+        const circ = 2 * Math.PI * 80;
+        const offset = circ - (p.pct / 100) * circ;
+        const el = document.getElementById('wf-gauge-progress'); if (el) el.style.strokeDashoffset = offset;
+        if (document.getElementById('wf-gauge-pct')) document.getElementById('wf-gauge-pct').textContent = `${p.pct}%`;
+        if (document.getElementById('wf-result-level')) document.getElementById('wf-result-level').textContent = p.level;
+        if (document.getElementById('wf-result-prob')) document.getElementById('wf-result-prob').textContent = p.score.toFixed(2);
+        if (document.getElementById('wf-result-rec')) document.getElementById('wf-result-rec').textContent = p.rec;
+        // update status cards
+        if (document.getElementById('wf-risk-status')) document.getElementById('wf-risk-status').textContent = p.level;
+    },
+    getFormData() {
+        return {
+            temperature_c:      parseFloat(document.getElementById('wf-temp').value) || 30,
+            humidity_pct:       parseFloat(document.getElementById('wf-humidity').value) || 20,
+            wind_speed_kmh:     parseFloat(document.getElementById('wf-wind').value) || 10,
+            vegetation_dryness: parseFloat(document.getElementById('wf-fuel').value) || 0.5,
+            elevation_m:        parseFloat(document.getElementById('wf-elev').value) || 500,
+            slope_degrees:      parseFloat(document.getElementById('wf-slope').value) || 10,
+            recent_fires:       parseFloat(document.getElementById('wf-recent').value) || 0,
+            fuel_load:          parseFloat(document.getElementById('wf-fuelload').value) || 3
+        };
+    },
+    setupEvents() {
+        const form = document.getElementById('wf-form'); if (!form) return;
+        form.addEventListener('submit', e => { e.preventDefault(); this.updateDisplay(this.predict(this.getFormData())); });
+    },
+    initCharts() {
+        // Fire index timeline
+        const labels = [], idx = [];
+        for (let i = 23; i >= 0; i--) {
+            const t = new Date(); t.setHours(t.getHours() - i);
+            labels.push(t.toLocaleTimeString('en-US', { hour: '2-digit', minute: '2-digit' }));
+            idx.push(Math.max(0, 10 + Math.sin(i * 0.3) * 6 + (Math.random() - 0.5) * 6));
+        }
+        const ctx = document.getElementById('wf-fire-chart');
+        if (ctx) {
+            this.charts = this.charts || {};
+            this.charts.fire = new Chart(ctx.getContext('2d'), {
+                type: 'line',
+                data: { labels, datasets: [{ label: 'Fire Index', data: idx, borderColor: 'rgba(255,107,47,0.95)', backgroundColor: 'rgba(255,107,47,0.12)', borderWidth: 3, fill: true, tension: 0.35 }] },
+                options: makeChartOptions(40)
+            });
+        }
+        const rCtx = document.getElementById('wf-radar-chart');
+        if (rCtx) {
+            this.charts.radar = new Chart(rCtx.getContext('2d'), {
+                type: 'radar',
+                data: { labels: ['Temp','Humidity','Wind','Fuel','Slope','Moisture'], datasets: [{ label: 'Current', data: [0.7,0.2,0.4,0.74,0.25,0.3], borderColor: 'rgba(255,154,102,0.95)', backgroundColor: 'rgba(255,154,102,0.15)', borderWidth: 3 }] },
+                options: makeRadarOptions()
+            });
+        }
+    },
+    startRealTime() {
+        // update cards and charts periodically
+        setInterval(() => {
+            if (document.getElementById('wf-temp-status')) document.getElementById('wf-temp-status').textContent = `${(28 + Math.floor(Math.random()*8))}°C`;
+            if (document.getElementById('wf-wind-status')) document.getElementById('wf-wind-status').textContent = `${(10 + Math.floor(Math.random()*30))} km/h`;
+            if (document.getElementById('wf-fuel-status')) document.getElementById('wf-fuel-status').textContent = (0.4 + Math.random()*0.6).toFixed(2);
+            if (this.charts && this.charts.fire) {
+                const now = new Date();
+                this.charts.fire.data.labels.push(now.toLocaleTimeString('en-US',{hour:'2-digit',minute:'2-digit'}));
+                this.charts.fire.data.labels.shift();
+                this.charts.fire.data.datasets[0].data.push(Math.max(0,10 + Math.random()*30));
+                this.charts.fire.data.datasets[0].data.shift();
+                this.charts.fire.update('quiet');
+            }
+        }, 8000);
+    }
+ };
+ 
+ const StormEngine = {
+     predict(d) {
+         const w = Math.min(1, d.wind_speed_kmh / 200);
+         const p = Math.max(0, (1010 - d.central_pressure_hpa) / 60);
+         const s = Math.min(1, (d.sea_surface_temp_c - 25) / 10);
+         const slope = Math.max(0, (15 - d.coastal_slope_degrees) / 15);
+         const lat = Math.max(0, Math.abs(d.latitude_degrees) / 40);
+         const recent = Math.min(1, d.recent_storms / 2);
+         const current = Math.max(0, Math.abs(d.ocean_current_ms) / 3);
+         
+         const base = 0.30 * w + 0.25 * p + 0.20 * s + 0.10 * slope + 0.05 * lat + 0.05 * recent + 0.05 * current;
+         const score = Math.min(1, base * (0.9 + Math.random() * 0.2));
+         const pct = Math.round(score * 100);
+         const level = pct < 25 ? 'Low' : pct < 50 ? 'Moderate' : pct < 75 ? 'High' : 'Extreme';
+         const rec = pct < 25 ? 'No immediate threat' : pct < 50 ? 'Monitor advisories' : pct < 75 ? 'Secure property & prepare' : 'Follow evacuation orders';
+         return { score, pct, level, rec };
+     },
+     updateDisplay(p) {
+         const circ = 2 * Math.PI * 80;
+         const offset = circ - (p.pct / 100) * circ;
+         const el = document.getElementById('st-gauge-progress'); if (el) el.style.strokeDashoffset = offset;
+         if (document.getElementById('st-gauge-pct')) document.getElementById('st-gauge-pct').textContent = `${p.pct}%`;
+         if (document.getElementById('st-result-level')) document.getElementById('st-result-level').textContent = p.level;
+         if (document.getElementById('st-result-prob')) document.getElementById('st-result-prob').textContent = `${p.pct}%`;
+         if (document.getElementById('st-result-rec')) document.getElementById('st-result-rec').textContent = p.rec;
+         if (document.getElementById('st-risk-status')) document.getElementById('st-risk-status').textContent = p.level;
+     },
+     getFormData() {
+         return {
+             wind_speed_kmh:        parseFloat(document.getElementById('st-wind').value) || 80,
+             central_pressure_hpa:  parseFloat(document.getElementById('st-press').value) || 990,
+             sea_surface_temp_c:    parseFloat(document.getElementById('st-sea').value) || 27,
+             coastal_slope_degrees: parseFloat(document.getElementById('st-slope').value) || 3,
+             sea_elevation_m:       parseFloat(document.getElementById('st-elev').value) || 200,
+             latitude_degrees:      parseFloat(document.getElementById('st-lat').value) || 20,
+             recent_storms:         parseFloat(document.getElementById('st-recent').value) || 0,
+             ocean_current_ms:      parseFloat(document.getElementById('st-current').value) || 0.5
+         };
+     },
+     setupEvents() {
+         const form = document.getElementById('st-form'); if (!form) return;
+         form.addEventListener('submit', e => { e.preventDefault(); this.updateDisplay(this.predict(this.getFormData())); });
+     },
+     initCharts() {
+        // wind & pressure timeline
+        const labels = [], wind = [], press = [];
+        for (let i = 23; i >= 0; i--) {
+            const t = new Date(); t.setHours(t.getHours() - i);
+            labels.push(t.toLocaleTimeString('en-US', { hour: '2-digit', minute: '2-digit' }));
+            wind.push(Math.max(0, 40 + Math.sin(i * 0.25) * 20 + (Math.random() - 0.5) * 15));
+            press.push(Math.max(920, 1010 + Math.sin(i * 0.2) * 8 + (Math.random() - 0.5) * 6));
+        }
+        const wCtx = document.getElementById('st-weather-chart');
+        if (wCtx) {
+            this.charts = this.charts || {};
+            this.charts.wind = new Chart(wCtx.getContext('2d'), {
+                type: 'line', data: { labels, datasets: [
+                    { label: 'Wind (km/h)', data: wind, borderColor: 'rgba(6,182,212,0.95)', backgroundColor: 'rgba(6,182,212,0.12)', borderWidth: 3, fill: true, tension: 0.35, yAxisID: 'y' },
+                    { label: 'Pressure (hPa)', data: press, borderColor: 'rgba(14,165,233,0.8)', backgroundColor: 'rgba(14,165,233,0.08)', borderWidth: 2, fill: false, tension: 0.35, yAxisID: 'y1' }
+                ]},
+                options: {
+                    responsive: true, maintainAspectRatio: false,
+                    interaction: { mode: 'index', intersect: false },
+                    scales: {
+                        x:  { grid: { color: 'rgba(255,255,255,0.08)' }, ticks: { color: '#94a3b8', maxTicksLimit: 8 } },
+                        y:  { type: 'linear', position: 'left',  beginAtZero: true, grid: { color: 'rgba(255,255,255,0.08)' }, ticks: { color: '#94a3b8' } },
+                        y1: { type: 'linear', position: 'right', grid: { drawOnChartArea: false }, ticks: { color: '#94a3b8' } }
+                    },
+                    plugins: { legend: { labels: { color: '#cbd5e1' } }, tooltip: { backgroundColor: 'rgba(0,0,0,0.8)' } }
+                }
+            });
+        }
+        const rCtx = document.getElementById('st-radar-chart');
+        if (rCtx) {
+            this.charts.radar = new Chart(rCtx.getContext('2d'), {
+                type: 'radar', data: { labels: ['Wind','Pressure','Sea Temp','Coastal Slope','Surge'], datasets: [{ label: 'Current', data: [0.6,0.4,0.7,0.2,0.35], borderColor: 'rgba(6,182,212,0.95)', backgroundColor: 'rgba(6,182,212,0.12)', borderWidth: 3 }] },
+                options: makeRadarOptions()
+            });
+        }
+    },
+    startRealTime() {
+        setInterval(() => {
+            if (document.getElementById('st-wind-status'))     document.getElementById('st-wind-status').textContent     = `${(60 + Math.floor(Math.random()*40))} km/h`;
+            if (document.getElementById('st-pressure-status')) document.getElementById('st-pressure-status').textContent = `${(960 + Math.floor(Math.random()*40))} hPa`;
+            if (document.getElementById('st-alerts-count'))   document.getElementById('st-alerts-count').textContent    = Math.floor(Math.random()*5)+1;
+            if (this.charts && this.charts.wind) {
+                const now = new Date();
+                this.charts.wind.data.labels.push(now.toLocaleTimeString('en-US',{hour:'2-digit',minute:'2-digit'}));
+                this.charts.wind.data.labels.shift();
+                this.charts.wind.data.datasets[0].data.push(Math.max(0, 40 + Math.random()*60));
+                this.charts.wind.data.datasets[0].data.shift();
+                this.charts.wind.data.datasets[1].data.push(Math.max(920, 960 + Math.random()*50));
+                this.charts.wind.data.datasets[1].data.shift();
+                this.charts.wind.update('quiet');
+            }
+        }, 9000);
+    }
+};
+ 
+ // ======================================================
+ //  INIT
+ document.addEventListener('DOMContentLoaded', () => {
+     FloodEngine.initCharts();
+     FloodEngine.setupEvents();
+     FloodEngine.startRealTime();
+ 
+     EqEngine.initCharts();
+     EqEngine.setupEvents();
+     EqEngine.startRealTime();
+
+    // initialize wildfire and storm engines to match flood/earthquake
+    if (typeof FireEngine.initCharts === 'function') FireEngine.initCharts();
+    if (typeof FireEngine.setupEvents === 'function') FireEngine.setupEvents();
+    if (typeof FireEngine.startRealTime === 'function') FireEngine.startRealTime();
+
+    if (typeof StormEngine.initCharts === 'function') StormEngine.initCharts();
+    if (typeof StormEngine.setupEvents === 'function') StormEngine.setupEvents();
+    if (typeof StormEngine.startRealTime === 'function') StormEngine.startRealTime();
+
+    // Check user authentication status on page load
+    syncAuthState();
+});
+
+// ======================================================
+//  AUTH CLIENT LOGIC
+// ======================================================
+const AUTH_API_BASE = window.location.origin;
+
+function openAuthModal(tab = 'login') {
+    switchModalTab(tab);
+    document.getElementById('authModalOverlay').classList.add('active');
+}
+
+function closeAuthModal() {
+    document.getElementById('authModalOverlay').classList.remove('active');
+    hideModalAlert();
+}
+
+function handleModalOverlayClick(e) {
+    if (e.target.id === 'authModalOverlay') {
+        closeAuthModal();
+    }
+}
+
+function switchModalTab(tab) {
+    hideModalAlert();
+    const tabLogin = document.getElementById('modalTabLogin');
+    const tabReg = document.getElementById('modalTabRegister');
+    const loginForm = document.getElementById('modalLoginForm');
+    const regForm = document.getElementById('modalRegisterForm');
+
+    if (tab === 'login') {
+        tabLogin.style.background = 'var(--flood-primary)';
+        tabLogin.style.color = '#fff';
+        tabReg.style.background = 'transparent';
+        tabReg.style.color = '#9ca3af';
+        loginForm.style.display = 'block';
+        regForm.style.display = 'none';
+    } else {
+        tabReg.style.background = 'var(--flood-primary)';
+        tabReg.style.color = '#fff';
+        tabLogin.style.background = 'transparent';
+        tabLogin.style.color = '#9ca3af';
+        regForm.style.display = 'block';
+        loginForm.style.display = 'none';
+    }
+}
+
+function showModalAlert(msg, isSuccess = false) {
+    const alertBox = document.getElementById('modalAlert');
+    const alertText = document.getElementById('modalAlertText');
+    alertBox.style.display = 'flex';
+    alertBox.style.background = isSuccess ? 'rgba(16, 185, 129, 0.2)' : 'rgba(239, 68, 68, 0.2)';
+    alertBox.style.border = isSuccess ? '1px solid rgba(16, 185, 129, 0.5)' : '1px solid rgba(239, 68, 68, 0.5)';
+    alertBox.style.color = isSuccess ? '#6ee7b7' : '#fca5a5';
+    alertText.textContent = msg;
+}
+
+function hideModalAlert() {
+    const alertBox = document.getElementById('modalAlert');
+    if (alertBox) alertBox.style.display = 'none';
+}
+
+function toggleUserDropdown(e) {
+    e.stopPropagation();
+    const dropdown = document.getElementById('userDropdown');
+    dropdown.classList.toggle('show');
+}
+
+document.addEventListener('click', () => {
+    const dropdown = document.getElementById('userDropdown');
+    if (dropdown && dropdown.classList.contains('show')) {
+        dropdown.classList.remove('show');
+    }
+});
+
+async function submitModalLogin(e) {
+    e.preventDefault();
+    hideModalAlert();
+    const btn = document.getElementById('modalLoginBtn');
+    const originalText = btn.innerHTML;
+    btn.disabled = true;
+    btn.innerHTML = '<i class="fas fa-spinner fa-spin"></i> Signing in...';
+
+    const login = document.getElementById('modalLoginIdentifier').value.trim();
+    const password = document.getElementById('modalLoginPassword').value;
+
+    try {
+        const resp = await fetch(`${AUTH_API_BASE}/api/auth/login`, {
+            method: 'POST',
+            headers: { 'Content-Type': 'application/json' },
+            body: JSON.stringify({ login, password })
+        });
+        const data = await resp.json();
+
+        if (!resp.ok) {
+            showModalAlert(data.details || data.error || 'Invalid credentials');
+            return;
+        }
+
+        localStorage.setItem('disasterai_access_token', data.access_token);
+        localStorage.setItem('disasterai_refresh_token', data.refresh_token);
+        localStorage.setItem('disasterai_user', JSON.stringify(data.user));
+
+        showModalAlert('Signed in successfully!', true);
+        setTimeout(() => {
+            closeAuthModal();
+            updateAuthUI(data.user);
+        }, 500);
+    } catch (err) {
+        showModalAlert('Server unreachable. Please check connection.');
+    } finally {
+        btn.disabled = false;
+        btn.innerHTML = originalText;
+    }
+}
+
+async function submitModalRegister(e) {
+    e.preventDefault();
+    hideModalAlert();
+    const btn = document.getElementById('modalRegBtn');
+    const originalText = btn.innerHTML;
+    btn.disabled = true;
+    btn.innerHTML = '<i class="fas fa-spinner fa-spin"></i> Creating...';
+
+    const username = document.getElementById('modalRegUsername').value.trim();
+    const email = document.getElementById('modalRegEmail').value.trim();
+    const password = document.getElementById('modalRegPassword').value;
+
+    try {
+        const resp = await fetch(`${AUTH_API_BASE}/api/auth/register`, {
+            method: 'POST',
+            headers: { 'Content-Type': 'application/json' },
+            body: JSON.stringify({ username, email, password })
+        });
+        const data = await resp.json();
+
+        if (!resp.ok) {
+            let msg = data.error;
+            if (data.details && typeof data.details === 'object') {
+                msg = Object.values(data.details).join('. ');
+            }
+            showModalAlert(msg || 'Registration failed');
+            return;
+        }
+
+        localStorage.setItem('disasterai_access_token', data.access_token);
+        localStorage.setItem('disasterai_refresh_token', data.refresh_token);
+        localStorage.setItem('disasterai_user', JSON.stringify(data.user));
+
+        showModalAlert('Account created successfully!', true);
+        setTimeout(() => {
+            closeAuthModal();
+            updateAuthUI(data.user);
+        }, 600);
+    } catch (err) {
+        showModalAlert('Server unreachable. Please check connection.');
+    } finally {
+        btn.disabled = false;
+        btn.innerHTML = originalText;
+    }
+}
+
+async function handleSignOut() {
+    const refresh = localStorage.getItem('disasterai_refresh_token');
+    if (refresh) {
+        try {
+            await fetch(`${AUTH_API_BASE}/api/auth/logout`, {
+                method: 'POST',
+                headers: { 'Content-Type': 'application/json' },
+                body: JSON.stringify({ refresh_token: refresh })
+            });
+        } catch (e) {}
+    }
+    localStorage.removeItem('disasterai_access_token');
+    localStorage.removeItem('disasterai_refresh_token');
+    localStorage.removeItem('disasterai_user');
+    updateAuthUI(null);
+}
+
+function updateAuthUI(user) {
+    const signInBtn = document.getElementById('openAuthModalBtn');
+    const profileWidget = document.getElementById('userProfileWidget');
+
+    if (user) {
+        signInBtn.style.display = 'none';
+        profileWidget.style.display = 'inline-block';
+        document.getElementById('navUsernameText').textContent = user.username;
+        document.getElementById('navUserInitial').textContent = user.username[0].toUpperCase();
+        document.getElementById('dropdownUsername').textContent = user.username;
+        document.getElementById('dropdownEmail').textContent = user.email;
+    } else {
+        signInBtn.style.display = 'inline-flex';
+        profileWidget.style.display = 'none';
+    }
+}
+
+async function syncAuthState() {
+    const token = localStorage.getItem('disasterai_access_token');
+    if (!token) {
+        updateAuthUI(null);
+        return;
+    }
+
+    try {
+        const resp = await fetch(`${AUTH_API_BASE}/api/auth/me`, {
+            headers: { 'Authorization': `Bearer ${token}` }
+        });
+        if (resp.ok) {
+            const data = await resp.json();
+            updateAuthUI(data.user);
+        } else {
+            // Token might be expired, try refreshing
+            const refreshed = await attemptTokenRefresh();
+            if (!refreshed) {
+                updateAuthUI(null);
+            }
+        }
+    } catch (err) {
+        // Offline: try cached user info
+        const cached = localStorage.getItem('disasterai_user');
+        if (cached) {
+            try { updateAuthUI(JSON.parse(cached)); } catch(e){}
+        }
+    }
+}
+
+async function attemptTokenRefresh() {
+    const refresh = localStorage.getItem('disasterai_refresh_token');
+    if (!refresh) return false;
+
+    try {
+        const res = await fetch(`${AUTH_API_BASE}/api/auth/refresh`, {
+            method: 'POST',
+            headers: { 'Content-Type': 'application/json' },
+            body: JSON.stringify({ refresh_token: refresh })
+        });
+        if (res.ok) {
+            const data = await res.json();
+            localStorage.setItem('disasterai_access_token', data.access_token);
+            // Re-fetch profile
+            const meRes = await fetch(`${AUTH_API_BASE}/api/auth/me`, {
+                headers: { 'Authorization': `Bearer ${data.access_token}` }
+            });
+            if (meRes.ok) {
+                const meData = await meRes.json();
+                updateAuthUI(meData.user);
+                return true;
+            }
+        }
+    } catch(e) {}
+    localStorage.removeItem('disasterai_access_token');
+    localStorage.removeItem('disasterai_refresh_token');
+    localStorage.removeItem('disasterai_user');
+    return false;
+}
+
+async function viewMyPredictions() {
+    const token = localStorage.getItem('disasterai_access_token');
+    if (!token) {
+        openAuthModal('login');
+        return;
+    }
+    try {
+        const res = await fetch(`${AUTH_API_BASE}/api/auth/my-predictions?limit=5`, {
+            headers: { 'Authorization': `Bearer ${token}` }
+        });
+        if (res.ok) {
+            const data = await res.json();
+            if (data.count === 0) {
+                alert(`No saved predictions found yet.\nRun any prediction on the dashboard to save it to your account history!`);
+            } else {
+                const list = data.predictions.map((p, idx) => 
+                    `${idx+1}. ${p.type.toUpperCase()}: ${p.risk_level} (${(p.risk_score * 100).toFixed(0)}%) - ${p.location || 'Your Area'} [${new Date(p.created_at).toLocaleDateString()}]`
+                ).join('\n');
+                alert(`📋 Your Recent Predictions (${data.count} saved):\n\n${list}`);
+            }
+        }
+    } catch(e) {
+        alert('Could not retrieve predictions from server.');
+    }
+}
+</script>
+
+<!-- Embedded Auth Modal -->
+<div class="auth-modal-overlay" id="authModalOverlay" onclick="handleModalOverlayClick(event)">
+    <div class="auth-modal-box">
+        <button class="modal-close-btn" onclick="closeAuthModal()" aria-label="Close">
+            <i class="fas fa-times"></i>
+        </button>
+        <div style="text-align:center;margin-bottom:20px;">
+            <div style="display:flex;align-items:center;justify-content:center;gap:8px;font-size:1.5rem;color:var(--flood-primary);margin-bottom:6px;">
+                <i class="fas fa-shield-halved"></i>
+                <h3 style="font-size:1.3rem;font-weight:800;color:#fff;">DisasterAI Pro</h3>
+            </div>
+            <p style="color:#9ca3af;font-size:0.85rem;">Access personalized risk tracking & alerts</p>
+        </div>
+
+        <div style="display:grid;grid-template-columns:1fr 1fr;background:#1f2937;border-radius:10px;padding:4px;margin-bottom:20px;border:1px solid #374151;">
+            <button class="tab-btn active" id="modalTabLogin" onclick="switchModalTab('login')" style="background:var(--flood-primary);color:#fff;border:none;padding:8px;border-radius:6px;font-weight:600;cursor:pointer;">Sign In</button>
+            <button class="tab-btn" id="modalTabRegister" onclick="switchModalTab('register')" style="background:transparent;color:#9ca3af;border:none;padding:8px;border-radius:6px;font-weight:600;cursor:pointer;">Register</button>
+        </div>
+
+        <div id="modalAlert" style="display:none;padding:10px 14px;border-radius:8px;font-size:0.85rem;margin-bottom:16px;align-items:center;gap:8px;">
+            <i class="fas fa-circle-exclamation"></i>
+            <span id="modalAlertText"></span>
+        </div>
+
+        <!-- Login Form -->
+        <form id="modalLoginForm" onsubmit="submitModalLogin(event)">
+            <div style="margin-bottom:14px;">
+                <label style="display:block;font-size:0.75rem;font-weight:700;color:#9ca3af;margin-bottom:5px;text-transform:uppercase;">Email or Username</label>
+                <div style="position:relative;">
+                    <i class="fas fa-user" style="position:absolute;left:12px;top:13px;color:#6b7280;font-size:0.9rem;"></i>
+                    <input type="text" id="modalLoginIdentifier" required placeholder="user@example.com or username" style="width:100%;box-sizing:border-box;background:#1f2937;border:1px solid #374151;border-radius:8px;padding:10px 12px 10px 36px;color:#fff;font-size:0.9rem;outline:none;">
+                </div>
+            </div>
+            <div style="margin-bottom:18px;">
+                <label style="display:block;font-size:0.75rem;font-weight:700;color:#9ca3af;margin-bottom:5px;text-transform:uppercase;">Password</label>
+                <div style="position:relative;">
+                    <i class="fas fa-lock" style="position:absolute;left:12px;top:13px;color:#6b7280;font-size:0.9rem;"></i>
+                    <input type="password" id="modalLoginPassword" required placeholder="Enter password" style="width:100%;box-sizing:border-box;background:#1f2937;border:1px solid #374151;border-radius:8px;padding:10px 12px 10px 36px;color:#fff;font-size:0.9rem;outline:none;">
+                </div>
+            </div>
+            <button type="submit" id="modalLoginBtn" style="width:100%;background:linear-gradient(135deg,var(--flood-primary),#2563eb);color:#fff;border:none;border-radius:8px;padding:12px;font-size:0.95rem;font-weight:700;cursor:pointer;display:flex;align-items:center;justify-content:center;gap:8px;">
+                <span>Sign In</span> <i class="fas fa-arrow-right"></i>
+            </button>
+        </form>
+
+        <!-- Register Form -->
+        <form id="modalRegisterForm" style="display:none;" onsubmit="submitModalRegister(event)">
+            <div style="margin-bottom:12px;">
+                <label style="display:block;font-size:0.75rem;font-weight:700;color:#9ca3af;margin-bottom:4px;text-transform:uppercase;">Username</label>
+                <div style="position:relative;">
+                    <i class="fas fa-user-tag" style="position:absolute;left:12px;top:13px;color:#6b7280;font-size:0.9rem;"></i>
+                    <input type="text" id="modalRegUsername" required minlength="3" maxlength="30" placeholder="e.g. disaster_watcher" style="width:100%;box-sizing:border-box;background:#1f2937;border:1px solid #374151;border-radius:8px;padding:10px 12px 10px 36px;color:#fff;font-size:0.9rem;outline:none;">
+                </div>
+            </div>
+            <div style="margin-bottom:12px;">
+                <label style="display:block;font-size:0.75rem;font-weight:700;color:#9ca3af;margin-bottom:4px;text-transform:uppercase;">Email Address</label>
+                <div style="position:relative;">
+                    <i class="fas fa-envelope" style="position:absolute;left:12px;top:13px;color:#6b7280;font-size:0.9rem;"></i>
+                    <input type="email" id="modalRegEmail" required placeholder="you@domain.com" style="width:100%;box-sizing:border-box;background:#1f2937;border:1px solid #374151;border-radius:8px;padding:10px 12px 10px 36px;color:#fff;font-size:0.9rem;outline:none;">
+                </div>
+            </div>
+            <div style="margin-bottom:16px;">
+                <label style="display:block;font-size:0.75rem;font-weight:700;color:#9ca3af;margin-bottom:4px;text-transform:uppercase;">Password (min. 6 chars)</label>
+                <div style="position:relative;">
+                    <i class="fas fa-lock" style="position:absolute;left:12px;top:13px;color:#6b7280;font-size:0.9rem;"></i>
+                    <input type="password" id="modalRegPassword" required minlength="6" placeholder="Choose a password" style="width:100%;box-sizing:border-box;background:#1f2937;border:1px solid #374151;border-radius:8px;padding:10px 12px 10px 36px;color:#fff;font-size:0.9rem;outline:none;">
+                </div>
+            </div>
+            <button type="submit" id="modalRegBtn" style="width:100%;background:linear-gradient(135deg,var(--flood-primary),#2563eb);color:#fff;border:none;border-radius:8px;padding:12px;font-size:0.95rem;font-weight:700;cursor:pointer;display:flex;align-items:center;justify-content:center;gap:8px;">
+                <span>Create Account</span> <i class="fas fa-user-plus"></i>
+            </button>
+        </form>
+    </div>
+</div>
+</body>
+</html>

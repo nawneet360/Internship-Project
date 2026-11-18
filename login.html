@@ -1,0 +1,579 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Sign In / Register — DisasterAI Pro</title>
+    <link href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.0.0/css/all.min.css" rel="stylesheet">
+    <link href="https://fonts.googleapis.com/css2?family=Inter:wght@300;400;500;600;700;800&display=swap" rel="stylesheet">
+    <style>
+        :root {
+            --primary: #3b82f6;
+            --primary-hover: #2563eb;
+            --secondary: #e74c3c;
+            --bg: #0b0f19;
+            --card-bg: #111827;
+            --card-border: rgba(255, 255, 255, 0.1);
+            --text-main: #f9fafb;
+            --text-muted: #9ca3af;
+            --input-bg: #1f2937;
+            --input-border: #374151;
+            --danger: #ef4444;
+            --success: #10b981;
+        }
+
+        * {
+            box-sizing: border-box;
+            margin: 0;
+            padding: 0;
+            font-family: 'Inter', -apple-system, BlinkMacSystemFont, sans-serif;
+        }
+
+        body {
+            background: radial-gradient(circle at 50% 20%, #1e293b 0%, var(--bg) 70%);
+            color: var(--text-main);
+            min-height: 100vh;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            padding: 24px;
+        }
+
+        .auth-container {
+            width: 100%;
+            max-width: 440px;
+            background: var(--card-bg);
+            border: 1px solid var(--card-border);
+            border-radius: 20px;
+            box-shadow: 0 25px 50px -12px rgba(0, 0, 0, 0.6);
+            padding: 36px 32px;
+            backdrop-filter: blur(12px);
+            position: relative;
+            overflow: hidden;
+        }
+
+        .auth-container::before {
+            content: '';
+            position: absolute;
+            top: 0;
+            left: 0;
+            right: 0;
+            height: 4px;
+            background: linear-gradient(90deg, #3b82f6, #06b6d4, #e74c3c);
+        }
+
+        .brand {
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            gap: 12px;
+            margin-bottom: 24px;
+            text-decoration: none;
+            color: var(--text-main);
+        }
+
+        .brand-icon {
+            font-size: 2rem;
+            color: var(--primary);
+            display: flex;
+            gap: 6px;
+        }
+
+        .brand-icon .fa-mountain {
+            color: var(--secondary);
+        }
+
+        .brand h1 {
+            font-size: 1.5rem;
+            font-weight: 800;
+            letter-spacing: -0.5px;
+        }
+
+        .tabs {
+            display: grid;
+            grid-template-columns: 1fr 1fr;
+            background: var(--input-bg);
+            border-radius: 12px;
+            padding: 4px;
+            margin-bottom: 28px;
+            border: 1px solid var(--input-border);
+        }
+
+        .tab-btn {
+            background: transparent;
+            border: none;
+            color: var(--text-muted);
+            padding: 10px 16px;
+            font-size: 0.95rem;
+            font-weight: 600;
+            border-radius: 8px;
+            cursor: pointer;
+            transition: all 0.2s ease;
+        }
+
+        .tab-btn.active {
+            background: var(--primary);
+            color: #ffffff;
+            box-shadow: 0 4px 12px rgba(59, 130, 246, 0.35);
+        }
+
+        .alert-banner {
+            display: none;
+            padding: 12px 16px;
+            border-radius: 10px;
+            font-size: 0.88rem;
+            margin-bottom: 20px;
+            align-items: flex-start;
+            gap: 10px;
+            line-height: 1.4;
+        }
+
+        .alert-banner.error {
+            display: flex;
+            background: rgba(239, 68, 68, 0.15);
+            border: 1px solid rgba(239, 68, 68, 0.4);
+            color: #fca5a5;
+        }
+
+        .alert-banner.success {
+            display: flex;
+            background: rgba(16, 185, 129, 0.15);
+            border: 1px solid rgba(16, 185, 129, 0.4);
+            color: #6ee7b7;
+        }
+
+        .form-group {
+            margin-bottom: 18px;
+        }
+
+        .form-group label {
+            display: block;
+            font-size: 0.85rem;
+            font-weight: 600;
+            color: var(--text-muted);
+            margin-bottom: 6px;
+            text-transform: uppercase;
+            letter-spacing: 0.5px;
+        }
+
+        .input-wrapper {
+            position: relative;
+            display: flex;
+            align-items: center;
+        }
+
+        .input-wrapper i.prefix-icon {
+            position: absolute;
+            left: 14px;
+            color: #6b7280;
+            font-size: 0.95rem;
+        }
+
+        .input-wrapper input {
+            width: 100%;
+            background: var(--input-bg);
+            border: 1px solid var(--input-border);
+            border-radius: 10px;
+            padding: 12px 14px 12px 42px;
+            color: var(--text-main);
+            font-size: 0.95rem;
+            transition: all 0.2s;
+            outline: none;
+        }
+
+        .input-wrapper input:focus {
+            border-color: var(--primary);
+            box-shadow: 0 0 0 3px rgba(59, 130, 246, 0.25);
+        }
+
+        .toggle-pw {
+            position: absolute;
+            right: 14px;
+            background: none;
+            border: none;
+            color: #9ca3af;
+            cursor: pointer;
+            font-size: 0.95rem;
+        }
+
+        .toggle-pw:hover {
+            color: var(--text-main);
+        }
+
+        .submit-btn {
+            width: 100%;
+            background: linear-gradient(135deg, var(--primary), var(--primary-hover));
+            color: #ffffff;
+            border: none;
+            border-radius: 10px;
+            padding: 14px;
+            font-size: 1rem;
+            font-weight: 700;
+            cursor: pointer;
+            transition: all 0.2s ease;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            gap: 10px;
+            margin-top: 24px;
+            box-shadow: 0 10px 20px -5px rgba(59, 130, 246, 0.4);
+        }
+
+        .submit-btn:hover {
+            transform: translateY(-1px);
+            box-shadow: 0 14px 24px -5px rgba(59, 130, 246, 0.5);
+        }
+
+        .submit-btn:disabled {
+            opacity: 0.6;
+            cursor: not-allowed;
+            transform: none;
+        }
+
+        .footer-nav {
+            text-align: center;
+            margin-top: 24px;
+            font-size: 0.88rem;
+            color: var(--text-muted);
+        }
+
+        .footer-nav a {
+            color: var(--primary);
+            text-decoration: none;
+            font-weight: 600;
+        }
+
+        .footer-nav a:hover {
+            text-decoration: underline;
+        }
+
+        .user-logged-in-card {
+            display: none;
+            text-align: center;
+            padding: 20px 0;
+        }
+
+        .avatar-circle {
+            width: 72px;
+            height: 72px;
+            background: linear-gradient(135deg, var(--primary), var(--secondary));
+            border-radius: 50%;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            font-size: 2rem;
+            font-weight: 800;
+            color: #ffffff;
+            margin: 0 auto 16px;
+        }
+
+        .user-logged-in-card h2 {
+            font-size: 1.3rem;
+            margin-bottom: 4px;
+        }
+
+        .user-logged-in-card p {
+            color: var(--text-muted);
+            font-size: 0.9rem;
+            margin-bottom: 24px;
+        }
+    </style>
+</head>
+<body>
+
+<div class="auth-container">
+    <a href="/" class="brand">
+        <div class="brand-icon">
+            <i class="fas fa-water"></i>
+            <i class="fas fa-mountain"></i>
+        </div>
+        <h1>DisasterAI Pro</h1>
+    </a>
+
+    <!-- Already Logged In View -->
+    <div id="loggedInView" class="user-logged-in-card">
+        <div class="avatar-circle" id="userInitial">U</div>
+        <h2 id="loggedInUsername">Welcome back</h2>
+        <p id="loggedInEmail">user@example.com</p>
+        <button class="submit-btn" onclick="window.location.href='/'">
+            <i class="fas fa-chart-line"></i> Go to Dashboard
+        </button>
+        <div class="footer-nav" style="margin-top:16px;">
+            <a href="#" id="signOutLink" style="color:var(--danger);"><i class="fas fa-sign-out-alt"></i> Sign out of this account</a>
+        </div>
+    </div>
+
+    <!-- Auth Form Container -->
+    <div id="authFormContainer">
+        <div class="tabs">
+            <button class="tab-btn active" id="tabLogin" onclick="switchAuthTab('login')">Sign In</button>
+            <button class="tab-btn" id="tabRegister" onclick="switchAuthTab('register')">Create Account</button>
+        </div>
+
+        <div id="alertBanner" class="alert-banner">
+            <i class="fas fa-circle-exclamation"></i>
+            <span id="alertMessage"></span>
+        </div>
+
+        <!-- Login Form -->
+        <form id="loginForm" onsubmit="handleLogin(event)">
+            <div class="form-group">
+                <label>Email or Username</label>
+                <div class="input-wrapper">
+                    <i class="fas fa-user prefix-icon"></i>
+                    <input type="text" id="loginIdentifier" placeholder="name@example.com or username" required autocomplete="username">
+                </div>
+            </div>
+
+            <div class="form-group">
+                <label>Password</label>
+                <div class="input-wrapper">
+                    <i class="fas fa-lock prefix-icon"></i>
+                    <input type="password" id="loginPassword" placeholder="Enter your password" required autocomplete="current-password">
+                    <button type="button" class="toggle-pw" onclick="togglePasswordVisibility('loginPassword', this)">
+                        <i class="fas fa-eye"></i>
+                    </button>
+                </div>
+            </div>
+
+            <button type="submit" class="submit-btn" id="loginSubmitBtn">
+                <span>Sign In</span>
+                <i class="fas fa-arrow-right"></i>
+            </button>
+        </form>
+
+        <!-- Register Form -->
+        <form id="registerForm" style="display:none;" onsubmit="handleRegister(event)">
+            <div class="form-group">
+                <label>Username</label>
+                <div class="input-wrapper">
+                    <i class="fas fa-user-tag prefix-icon"></i>
+                    <input type="text" id="regUsername" placeholder="e.g. john_doe" required autocomplete="username" minlength="3" maxlength="30">
+                </div>
+            </div>
+
+            <div class="form-group">
+                <label>Email Address</label>
+                <div class="input-wrapper">
+                    <i class="fas fa-envelope prefix-icon"></i>
+                    <input type="email" id="regEmail" placeholder="you@domain.com" required autocomplete="email">
+                </div>
+            </div>
+
+            <div class="form-group">
+                <label>Password (min. 6 characters)</label>
+                <div class="input-wrapper">
+                    <i class="fas fa-lock prefix-icon"></i>
+                    <input type="password" id="regPassword" placeholder="Create a password" required minlength="6" autocomplete="new-password">
+                    <button type="button" class="toggle-pw" onclick="togglePasswordVisibility('regPassword', this)">
+                        <i class="fas fa-eye"></i>
+                    </button>
+                </div>
+            </div>
+
+            <button type="submit" class="submit-btn" id="regSubmitBtn">
+                <span>Create Account</span>
+                <i class="fas fa-user-plus"></i>
+            </button>
+        </form>
+
+        <div class="footer-nav">
+            <a href="/"><i class="fas fa-arrow-left"></i> Return to Disaster Dashboard</a>
+        </div>
+    </div>
+</div>
+
+<script>
+    const API_BASE = window.location.origin;
+
+    function showAlert(msg, isSuccess = false) {
+        const banner = document.getElementById('alertBanner');
+        const text = document.getElementById('alertMessage');
+        banner.className = 'alert-banner ' + (isSuccess ? 'success' : 'error');
+        banner.querySelector('i').className = isSuccess ? 'fas fa-check-circle' : 'fas fa-circle-exclamation';
+        text.textContent = msg;
+        banner.style.display = 'flex';
+    }
+
+    function hideAlert() {
+        document.getElementById('alertBanner').style.display = 'none';
+    }
+
+    function switchAuthTab(tab) {
+        hideAlert();
+        const tabLogin = document.getElementById('tabLogin');
+        const tabReg = document.getElementById('tabRegister');
+        const loginForm = document.getElementById('loginForm');
+        const regForm = document.getElementById('registerForm');
+
+        if (tab === 'login') {
+            tabLogin.classList.add('active');
+            tabReg.classList.remove('active');
+            loginForm.style.display = 'block';
+            regForm.style.display = 'none';
+        } else {
+            tabReg.classList.add('active');
+            tabLogin.classList.remove('active');
+            regForm.style.display = 'block';
+            loginForm.style.display = 'none';
+        }
+    }
+
+    function togglePasswordVisibility(inputId, btn) {
+        const input = document.getElementById(inputId);
+        const icon = btn.querySelector('i');
+        if (input.type === 'password') {
+            input.type = 'text';
+            icon.className = 'fas fa-eye-slash';
+        } else {
+            input.type = 'password';
+            icon.className = 'fas fa-eye';
+        }
+    }
+
+    async function handleLogin(e) {
+        e.preventDefault();
+        hideAlert();
+        const btn = document.getElementById('loginSubmitBtn');
+        const originalContent = btn.innerHTML;
+        btn.disabled = true;
+        btn.innerHTML = '<i class="fas fa-spinner fa-spin"></i> Signing in...';
+
+        const login = document.getElementById('loginIdentifier').value.trim();
+        const password = document.getElementById('loginPassword').value;
+
+        try {
+            const resp = await fetch(`${API_BASE}/api/auth/login`, {
+                method: 'POST',
+                headers: { 'Content-Type': 'application/json' },
+                body: JSON.stringify({ login, password })
+            });
+
+            const data = await resp.json();
+
+            if (!resp.ok) {
+                showAlert(data.details || data.error || 'Failed to sign in. Please verify your credentials.');
+                return;
+            }
+
+            // Save tokens and user
+            localStorage.setItem('disasterai_access_token', data.access_token);
+            localStorage.setItem('disasterai_refresh_token', data.refresh_token);
+            localStorage.setItem('disasterai_user', JSON.stringify(data.user));
+
+            showAlert('Signed in successfully! Redirecting...', true);
+            setTimeout(() => {
+                const params = new URLSearchParams(window.location.search);
+                window.location.href = params.get('redirect') || '/';
+            }, 800);
+        } catch (err) {
+            showAlert('Network error: Could not reach the server. Please check your connection.');
+        } finally {
+            btn.disabled = false;
+            btn.innerHTML = originalContent;
+        }
+    }
+
+    async function handleRegister(e) {
+        e.preventDefault();
+        hideAlert();
+        const btn = document.getElementById('regSubmitBtn');
+        const originalContent = btn.innerHTML;
+        btn.disabled = true;
+        btn.innerHTML = '<i class="fas fa-spinner fa-spin"></i> Creating account...';
+
+        const username = document.getElementById('regUsername').value.trim();
+        const email = document.getElementById('regEmail').value.trim();
+        const password = document.getElementById('regPassword').value;
+
+        try {
+            const resp = await fetch(`${API_BASE}/api/auth/register`, {
+                method: 'POST',
+                headers: { 'Content-Type': 'application/json' },
+                body: JSON.stringify({ username, email, password })
+            });
+
+            const data = await resp.json();
+
+            if (!resp.ok) {
+                let msg = data.error;
+                if (data.details) {
+                    if (typeof data.details === 'object') {
+                        msg = Object.values(data.details).join('. ');
+                    } else {
+                        msg = data.details;
+                    }
+                }
+                showAlert(msg || 'Registration failed.');
+                return;
+            }
+
+            // Save tokens and user
+            localStorage.setItem('disasterai_access_token', data.access_token);
+            localStorage.setItem('disasterai_refresh_token', data.refresh_token);
+            localStorage.setItem('disasterai_user', JSON.stringify(data.user));
+
+            showAlert('Account created! Welcome to DisasterAI Pro. Redirecting...', true);
+            setTimeout(() => {
+                const params = new URLSearchParams(window.location.search);
+                window.location.href = params.get('redirect') || '/';
+            }, 1000);
+        } catch (err) {
+            showAlert('Network error: Could not reach the server. Please try again.');
+        } finally {
+            btn.disabled = false;
+            btn.innerHTML = originalContent;
+        }
+    }
+
+    // Check if user is already signed in
+    async function checkCurrentSession() {
+        const token = localStorage.getItem('disasterai_access_token');
+        if (!token) return;
+
+        try {
+            const res = await fetch(`${API_BASE}/api/auth/me`, {
+                headers: { 'Authorization': `Bearer ${token}` }
+            });
+            if (res.ok) {
+                const data = await res.json();
+                document.getElementById('authFormContainer').style.display = 'none';
+                const loggedInView = document.getElementById('loggedInView');
+                loggedInView.style.display = 'block';
+                document.getElementById('loggedInUsername').textContent = `Welcome, ${data.user.username}!`;
+                document.getElementById('loggedInEmail').textContent = data.user.email;
+                document.getElementById('userInitial').textContent = data.user.username[0].toUpperCase();
+            } else {
+                localStorage.removeItem('disasterai_access_token');
+                localStorage.removeItem('disasterai_user');
+            }
+        } catch (e) {}
+    }
+
+    document.getElementById('signOutLink').addEventListener('click', async (e) => {
+        e.preventDefault();
+        const refresh = localStorage.getItem('disasterai_refresh_token');
+        if (refresh) {
+            try {
+                await fetch(`${API_BASE}/api/auth/logout`, {
+                    method: 'POST',
+                    headers: { 'Content-Type': 'application/json' },
+                    body: JSON.stringify({ refresh_token: refresh })
+                });
+            } catch (err) {}
+        }
+        localStorage.removeItem('disasterai_access_token');
+        localStorage.removeItem('disasterai_refresh_token');
+        localStorage.removeItem('disasterai_user');
+        window.location.reload();
+    });
+
+    // Check query params (?tab=register)
+    if (window.location.pathname.includes('register') || new URLSearchParams(window.location.search).get('tab') === 'register') {
+        switchAuthTab('register');
+    }
+
+    checkCurrentSession();
+</script>
+</body>
+</html>

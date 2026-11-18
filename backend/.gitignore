@@ -1,0 +1,46 @@
+# Python
+__pycache__/
+*.py[cod]
+*.pyo
+*.pyd
+*.so
+*.egg
+*.egg-info/
+dist/
+build/
+.eggs/
+
+# Virtual environments
+.venv/
+venv/
+env/
+ENV/
+
+# Environment variables — NEVER commit secrets
+.env
+*.env
+
+# Logs
+logs/*.log
+logs/*.log.*
+
+# macOS
+.DS_Store
+*.fileloc
+
+# IDEs
+.vscode/
+.idea/
+*.swp
+*.swo
+
+# Model files — large binaries; train on boot instead of committing
+# Comment these lines out if you WANT to commit your trained models
+../models/*.pkl
+
+# Jupyter
+.ipynb_checkpoints/
+*.ipynb
+
+# Data downloads (Kaggle)
+../data/
